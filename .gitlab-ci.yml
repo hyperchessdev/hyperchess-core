@@ -71,7 +71,11 @@ rust:fmt:
     - !reference [.stub-cust-crate, before_script]
     - rustup component add rustfmt
   script:
-    - cargo fmt --all --check
+    # NOT `--all`: per its own --help, `--all` formats "all packages, and also their LOCAL
+    # PATH-BASED DEPENDENCIES" — that recurses into the .stub-cust-crate seed above (an
+    # intentionally-empty file outside this workspace) and fails on its non-canonical empty
+    # content. Explicit -p per real member gets the same coverage without that recursion.
+    - cargo fmt --check -p hyperchess-rules -p hyperchess-eval -p hyperchess-search -p hyperchess-wasm -p hyperchess-driver
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
 
