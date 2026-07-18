@@ -1,0 +1,54 @@
+{
+  "name": "@hyperchess/board",
+  "version": "0.1.0",
+  "description": "HyperChess 2D board component for all frameworks",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./react": {
+      "import": "./dist/React/index.js",
+      "types": "./dist/React/index.d.ts"
+    },
+    "./vue": {
+      "import": "./dist/Vue/index.js",
+      "types": "./dist/Vue/index.d.ts"
+    },
+    "./web-component": {
+      "import": "./dist/web-component/index.js",
+      "types": "./dist/web-component/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "vue": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@hyperchess/core": "workspace:*",
+    "@hyperchess/theme": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0",
+    "vitest": "^0.34.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["hyperchess", "board", "component", "react", "vue"],
+  "license": "MIT"
+}

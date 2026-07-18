@@ -1,0 +1,25 @@
+{
+  "name": "@hyperchess/theme",
+  "version": "0.1.0",
+  "description": "HyperChess board themes and styling",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./themes": {
+      "import": "./dist/themes/index.js",
+      "types": "./dist/themes/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["hyperchess", "theme", "styling", "css"],
+  "license": "MIT"
+}

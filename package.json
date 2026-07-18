@@ -6,9 +6,26 @@
   "scripts": {
     "build": "pnpm -r --if-present build",
     "test": "pnpm -r --if-present test",
-    "lint": "pnpm -r --if-present lint"
+    "lint": "eslint 'packages/*/src/**/*.ts' 'packages/*/src/**/*.tsx'",
+    "format": "prettier --write 'packages/*/src/**/*.{ts,tsx}'",
+    "size-check": "size-limit",
+    "size-report": "size-limit --why",
+    "dev": "pnpm -r --if-present dev"
   },
   "devDependencies": {
-    "turbo": "^2.10.5"
+    "turbo": "^2.10.5",
+    "@size-limit/webpack": "^10.0.0",
+    "@types/node": "^20.19.43",
+    "@types/react": "^19.2.17",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "@vitejs/plugin-vue": "^4.4.0",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.0",
+    "size-limit": "^10.0.0",
+    "typescript": "^5.2.0",
+    "vite": "^5.0.0",
+    "vitest": "^0.34.0"
   }
 }

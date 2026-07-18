@@ -1,0 +1,20 @@
+import { Board } from '../types/board';
+
+/** Undo the last move */
+export function undoMove(board: Board): Board {
+  if (board.history.length === 0) {
+    throw new Error('No moves to undo');
+  }
+
+  const lastState = board.history[board.history.length - 1];
+
+  return {
+    pieces: lastState.pieces,
+    toMove: lastState.toMove,
+    enPassantSquare: lastState.enPassantSquare,
+    castlingRights: lastState.castlingRights,
+    halfmoveClock: lastState.halfmoveClock,
+    fullmoveNumber: lastState.fullmoveNumber,
+    history: board.history.slice(0, -1),
+  };
+}

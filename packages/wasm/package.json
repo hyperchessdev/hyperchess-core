@@ -1,0 +1,38 @@
+{
+  "name": "@hyperchess/wasm",
+  "version": "0.1.0",
+  "description": "HyperChess game logic + 3D board rendering compiled to WebAssembly — a thin JS wrapper around crates/hyperchess-wasm (WasmBoard + Scene3D), not a separate implementation.",
+  "type": "module",
+  "main": "./dist/bundler/hyperchess_wasm.js",
+  "types": "./dist/bundler/hyperchess_wasm.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "import": "./dist/nodejs/hyperchess_wasm.js",
+        "types": "./dist/nodejs/hyperchess_wasm.d.ts"
+      },
+      "default": {
+        "import": "./dist/bundler/hyperchess_wasm.js",
+        "types": "./dist/bundler/hyperchess_wasm.d.ts"
+      }
+    },
+    "./nodejs": {
+      "import": "./dist/nodejs/hyperchess_wasm.js",
+      "types": "./dist/nodejs/hyperchess_wasm.d.ts"
+    },
+    "./bundler": {
+      "import": "./dist/bundler/hyperchess_wasm.js",
+      "types": "./dist/bundler/hyperchess_wasm.d.ts"
+    },
+    "./web": {
+      "import": "./dist/web/hyperchess_wasm.js",
+      "types": "./dist/web/hyperchess_wasm.d.ts"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "../../scripts/build-wasm-sdk.sh"
+  },
+  "keywords": ["hyperchess", "wasm", "game", "logic", "webgpu"],
+  "license": "GPL-3.0-or-later"
+}

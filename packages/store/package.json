@@ -1,0 +1,69 @@
+{
+  "name": "@hyperchess/store",
+  "version": "0.1.0",
+  "description": "HyperChess game storage abstraction - works with any backend",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./postgres": {
+      "import": "./dist/adapters/postgres.js",
+      "types": "./dist/adapters/postgres.d.ts"
+    },
+    "./sqlite": {
+      "import": "./dist/adapters/sqlite.js",
+      "types": "./dist/adapters/sqlite.d.ts"
+    },
+    "./firebase": {
+      "import": "./dist/adapters/firebase.js",
+      "types": "./dist/adapters/firebase.d.ts"
+    },
+    "./supabase": {
+      "import": "./dist/adapters/supabase.js",
+      "types": "./dist/adapters/supabase.d.ts"
+    },
+    "./memory": {
+      "import": "./dist/adapters/memory.js",
+      "types": "./dist/adapters/memory.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "pg": "^8.0.0",
+    "better-sqlite3": "^8.0.0",
+    "firebase": "^9.0.0",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "peerDependenciesMeta": {
+    "pg": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    },
+    "firebase": {
+      "optional": true
+    },
+    "@supabase/supabase-js": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@hyperchess/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.0",
+    "vitest": "^0.34.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["hyperchess", "storage", "database", "postgres", "sqlite", "firebase"],
+  "license": "MIT"
+}

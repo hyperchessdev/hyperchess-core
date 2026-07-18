@@ -1,0 +1,48 @@
+{
+  "name": "@hyperchess/core",
+  "version": "0.1.0",
+  "description": "HyperChess core game logic - framework agnostic",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./board": {
+      "import": "./dist/board/index.js",
+      "types": "./dist/board/index.d.ts"
+    },
+    "./moves": {
+      "import": "./dist/moves/index.js",
+      "types": "./dist/moves/index.d.ts"
+    },
+    "./game": {
+      "import": "./dist/game/index.js",
+      "types": "./dist/game/index.d.ts"
+    },
+    "./standalone": {
+      "import": "./dist/standalone.js",
+      "types": "./dist/standalone.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc && npm run build:standalone-bundle",
+    "build:standalone-bundle": "esbuild src/standalone.ts --bundle --format=esm --platform=browser --target=es2022 --external:@hyperchess/wasm/web --outfile=dist/standalone.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["hyperchess", "board", "game", "logic"],
+  "author": "HyperChess Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@hyperchess/wasm": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "typescript": "^5.2.0",
+    "vitest": "^0.34.0"
+  }
+}
