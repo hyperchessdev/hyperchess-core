@@ -1,0 +1,24 @@
+# Build output is centralized outside the repo — see docs/hyperchess-core-extraction-plan.md §9a.
+# These entries are a safety net in case a tool ignores the redirect, not the primary mechanism.
+# dist/ is a real build artifact (built fresh in CI right before `npm publish`
+# reads it) — normal for TS packages to gitignore, not a contradiction of §9a's
+# "dist/ stays in-repo, not redirected" (that's about publish-time disk state,
+# not git tracking).
+target/
+node_modules/
+dist/
+.turbo/
+
+# Tauri
+apps/*/src-tauri/target/
+apps/*/src-tauri/gen/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Env
+.env
+.env.local

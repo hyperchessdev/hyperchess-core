@@ -1,0 +1,9 @@
+[toolchain]
+# Pinned to plain "stable" for now — an exact MSRV/version policy is an open
+# item (docs/hyperchess-core-extraction-plan.md §13) to settle before the first
+# crates.io publish. Deliberately NOT the source repo's pinned nightly: that
+# pin exists only for the CUDA rustc_codegen_nvvm backend, which stays
+# source-only/unpublished (crates/hyperchess-search-cuda) and isn't part of
+# this workspace's default build.
+channel = "stable"
+targets = ["wasm32-unknown-unknown"]

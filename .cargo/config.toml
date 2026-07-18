@@ -1,0 +1,6 @@
+[build]
+# Centralized build output — see docs/hyperchess-core-extraction-plan.md §9a.
+# Verified empirically: cargo resolves this relative to the repo root (cargo's
+# CWD/workspace root), NOT relative to this .cargo/config.toml file's own
+# directory — so it's one "../" up from hyrperchess-core/, not two.
+target-dir = "../hyperchess-builds/hyrperchess-core/cargo-target"

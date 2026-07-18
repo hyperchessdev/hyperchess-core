@@ -1,0 +1,14 @@
+{
+  "name": "hyperchess-core-workspace",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "test": "pnpm -r --if-present test",
+    "lint": "pnpm -r --if-present lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.10.5"
+  }
+}
