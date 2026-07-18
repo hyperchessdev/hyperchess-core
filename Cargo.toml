@@ -1,9 +1,5 @@
 [workspace]
 resolver = "2"
-# Verified: cargo errors on a workspace with zero members (glob or explicit),
-# unlike npm/pnpm globs — so "empty workspace" needs one real member to build
-# at all. crates/_placeholder is that member; delete it (and drop this
-# comment) the moment Phase 1 adds crates/hyperchess-rules.
 members = [
     "crates/*",
 ]
@@ -16,4 +12,4 @@ exclude = [
 [workspace.package]
 edition = "2021"
 license = "GPL-3.0-or-later"
-repository = "https://github.com/REPLACE-ME/hyrperchess-core"
+repository = "https://gitlab.kyrpy.kyrpy.com/kyrpy/hyrperchess-core"

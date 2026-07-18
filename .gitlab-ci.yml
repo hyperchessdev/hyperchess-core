@@ -1,0 +1,243 @@
+# hyrperchess-core CI/CD — GitLab CI
+#
+# Hosting moved from the originally-planned GitHub (docs/hyperchess-core-extraction-plan.md
+# §7/§13) to the local self-hosted GitLab (kyrpy/hyrperchess-core) — see the plan's §7 for the
+# full rationale/history. This file re-implements the same six conceptual pipelines from §7
+# (test, cross-compiled release binaries, crates.io publish, npm publish, Docker, OpenShift
+# deploy) as GitLab CI jobs grouped by stage, instead of separate GitHub Actions workflow files.
+# `.github/workflows/ci.yml` is kept only as a historical reference for a possible future GitHub
+# mirror (§13 open item) — it is not wired to run anywhere.
+#
+# Known gap, flagged not hidden: as of this pipeline's creation, the GitLab instance
+# (gitlab.kyrpy.kyrpy.com) has ZERO registered CI runners (verified via
+# GET /api/v4/runners/all). Every job below will queue as "pending" until a runner is
+# registered against this instance — that's shared GitLab-instance infrastructure, out of
+# scope for a single project's pipeline definition. See docs/hyperchess-core-extraction-plan.md
+# §13 for tracking.
+
+stages:
+  - lint
+  - test
+  - release-binaries
+  - publish
+
+variables:
+  CARGO_TERM_COLOR: always
+  # Override the repo's local-dev .cargo/config.toml (target-dir = "../hyperchess-builds/...",
+  # see §9a) which assumes a sibling `hyperchess-builds/` workspace directory that doesn't exist
+  # on a CI runner. CARGO_TARGET_DIR (env) takes precedence over config.toml's target-dir, so
+  # this keeps CI self-contained inside the job's own workspace without editing the dev config.
+  CARGO_TARGET_DIR: "${CI_PROJECT_DIR}/target"
+  # Same reasoning for pnpm's store-dir (.npmrc: store-dir=../hyperchess-builds/.../pnpm-store).
+  npm_config_store_dir: "${CI_PROJECT_DIR}/.pnpm-store"
+  RUST_BACKTRACE: "1"
+
+# ---------------------------------------------------------------------------
+# 1. `ci` — lint + test, every push and merge request (was .github/workflows/ci.yml)
+# ---------------------------------------------------------------------------
+
+.cargo_cache: &cargo_cache
+  key:
+    files: [Cargo.lock]
+  paths:
+    - .cargo-home/registry/
+    - target/
+
+rust:fmt:
+  stage: lint
+  image: rust:1-bookworm
+  before_script:
+    - rustup component add rustfmt
+  script:
+    - cargo fmt --all --check
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+rust:clippy:
+  stage: lint
+  image: rust:1-bookworm
+  cache: *cargo_cache
+  before_script:
+    - rustup component add clippy
+  script:
+    # crates/hyperchess-search-cuda is workspace-excluded (Cargo.toml) and never touched here —
+    # it needs a local rust-cuda checkout no CI runner has. See §5 of the extraction plan.
+    - cargo clippy --workspace --all-targets -- -D warnings
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+rust:test:
+  stage: test
+  image: rust:1-bookworm
+  cache: *cargo_cache
+  script:
+    - cargo test --workspace
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+js:build-test:
+  stage: test
+  image: node:22-bookworm
+  cache:
+    key:
+      files: [pnpm-lock.yaml]
+    paths:
+      - .pnpm-store/
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    # packages/wasm's build script shells out to `cargo`/`wasm-pack` — needed for `pnpm -r build`.
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
+    - . "$HOME/.cargo/env"
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm run build
+    - pnpm run test
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH == "main"'
+
+# ---------------------------------------------------------------------------
+# 2. `release-binaries` — cross-compiled `hyperchess-driver` binaries, on tag only
+#    (was the "Cross-compiled release binaries" GH workflow in §7 item 2)
+# ---------------------------------------------------------------------------
+#
+# Native x86_64-unknown-linux-gnu needs no cross toolchain. aarch64-unknown-linux-gnu uses
+# `cross` (Docker-based), which needs the runner's Docker executor configured for
+# privileged/DinD mode — a runner-config prerequisite, not something this file can guarantee.
+# macOS/Windows targets are NOT included: this self-hosted GitLab has no native macOS/Windows
+# runners (unlike GitHub Actions' free hosted matrix the original plan assumed) — flagged as an
+# open item in §13, not silently dropped. Verified buildable in principle for both targets via
+# `cargo check` in this session (see the extraction plan's §7 verification note); this job is
+# the first attempt at an actual linked build.
+
+release:linux-x86_64:
+  stage: release-binaries
+  image: rust:1-bookworm
+  script:
+    - cargo build --release --target x86_64-unknown-linux-gnu -p hyperchess-driver
+  artifacts:
+    paths:
+      - target/x86_64-unknown-linux-gnu/release/hyperchess
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+release:linux-aarch64:
+  stage: release-binaries
+  image: rust:1-bookworm
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+  services:
+    - docker:dind
+  before_script:
+    - rustup target add aarch64-unknown-linux-gnu
+    - cargo install cross --git https://github.com/cross-rs/cross
+  script:
+    - cross build --release --target aarch64-unknown-linux-gnu -p hyperchess-driver
+  artifacts:
+    paths:
+      - target/aarch64-unknown-linux-gnu/release/hyperchess
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+release:wasm:
+  stage: release-binaries
+  image: node:22-bookworm
+  before_script:
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
+    - . "$HOME/.cargo/env"
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+  script:
+    - bash scripts/build-wasm-sdk.sh
+  artifacts:
+    paths:
+      - packages/wasm/dist/
+    expire_in: 30 days
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+# ---------------------------------------------------------------------------
+# 3. `release-crates` — cargo publish (was release-crates.yml in §7 item 3)
+# ---------------------------------------------------------------------------
+#
+# hyperchess-search-cuda is NEVER published (§5 — depends on unpublished local rust-cuda paths).
+# Real `cargo publish` needs a CARGO_REGISTRY_TOKEN CI/CD variable that is not yet configured
+# (crates.io account/token creation is outside what this session can do) — so this stays a
+# --dry-run smoke check on every tag until that token is added, then the `publish:crates` manual
+# job below becomes usable.
+
+publish:crates-dry-run:
+  stage: publish
+  image: rust:1-bookworm
+  script:
+    - for c in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm hyperchess-driver; do
+        echo "--- cargo publish --dry-run -p $c ---";
+        cargo publish --dry-run -p "$c" || exit 1;
+      done
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+publish:crates:
+  stage: publish
+  image: rust:1-bookworm
+  script:
+    - for c in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm hyperchess-driver; do
+        cargo publish -p "$c" --token "$CARGO_REGISTRY_TOKEN" || exit 1;
+      done
+  rules:
+    - if: '$CI_COMMIT_TAG && $CARGO_REGISTRY_TOKEN'
+      when: manual
+  allow_failure: false
+
+# ---------------------------------------------------------------------------
+# 4. `release-npm` — npm publish (was release-npm.yml in §7 item 4)
+# ---------------------------------------------------------------------------
+#
+# Same token gap as crates: real `npm publish` needs an NPM_TOKEN CI/CD variable not yet
+# configured. `pnpm publish --dry-run` runs unconditionally on tags as a smoke check.
+
+publish:npm-dry-run:
+  stage: publish
+  image: node:22-bookworm
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
+    - . "$HOME/.cargo/env"
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - pnpm install --frozen-lockfile
+  script:
+    - pnpm run build
+    - pnpm -r publish --dry-run --access public --no-git-checks
+  rules:
+    - if: '$CI_COMMIT_TAG'
+
+publish:npm:
+  stage: publish
+  image: node:22-bookworm
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@latest --activate
+    - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
+    - . "$HOME/.cargo/env"
+    - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+    - pnpm install --frozen-lockfile
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc-publish
+  script:
+    - pnpm run build
+    - pnpm -r publish --access public --no-git-checks --userconfig .npmrc-publish
+  rules:
+    - if: '$CI_COMMIT_TAG && $NPM_TOKEN'
+      when: manual
+  allow_failure: false
+
+# ---------------------------------------------------------------------------
+# 5/6. Docker image + OpenShift deploy (§7 items 5/6) — NOT included here.
+# ---------------------------------------------------------------------------
+# Both depend on artifacts Phase 9 ("Docker + OpenShift", §12) has not produced yet:
+# `Dockerfile.driver` and trimmed OpenShift manifests don't exist in this repo. A job pointing
+# at either would be guaranteed to fail on first run. Deliberately deferred rather than stubbed
+# out with fake passing jobs — add them here once Phase 9 lands.

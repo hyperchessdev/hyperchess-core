@@ -231,7 +231,31 @@ This is the one component with no existing analog, so it gets its own design pas
 
 ## 7. CI/CD Pipeline
 
-No existing workflows to preserve, so this is designed clean:
+**Update — hosting decision made, implementation landed on GitLab, not GitHub.** The design below
+(items 1–6) was written assuming GitHub Actions (per §13's original open item); the repo has since
+been pushed to the local self-hosted GitLab instead (`kyrpy/hyrperchess-core` on
+`gitlab.kyrpy.kyrpy.com`, decided when no GitHub org existed yet and the user chose GitLab). The
+six conceptual pipelines below are implemented as GitLab CI jobs in a single `.gitlab-ci.yml`
+(stages: `lint`/`test`/`release-binaries`/`publish`), grouped by stage rather than split into
+separate workflow files — validated syntactically valid via GitLab's own `POST /ci/lint` API before
+pushing. `.github/workflows/ci.yml` from Phase 0 is kept only as a reference for a possible future
+GitHub mirror, not wired to run anywhere. Real differences from the original GitHub-oriented design:
+- **No macOS/Windows release binaries** — this GitLab instance has no native macOS/Windows runners
+  (unlike GitHub Actions' free hosted matrix). Only `x86_64`/`aarch64` Linux are built on tag.
+  Flagged as an open item (§13), not silently dropped.
+- **crates.io/npm publish stay `--dry-run`-only** until `CARGO_REGISTRY_TOKEN`/`NPM_TOKEN` CI/CD
+  variables are configured (neither exists yet — needs external account/token creation this
+  session can't do). The real `publish:crates`/`publish:npm` jobs are `rules`-gated on those
+  variables existing, so they simply don't appear until the tokens are added.
+- **Docker + OpenShift deploy jobs are NOT included yet** — both depend on `Dockerfile.driver` and
+  trimmed OpenShift manifests that Phase 9 (§12) hasn't produced. A job pointing at nonexistent
+  files would be guaranteed to fail; deferred rather than stubbed with a fake-passing job.
+- **Known infra gap**: `gitlab.kyrpy.kyrpy.com` has **zero registered CI runners** (verified via
+  `GET /api/v4/runners/all`) as of this pipeline's creation — every job queues as "pending"
+  until a runner is registered against the instance. That's shared GitLab infrastructure, out of
+  scope for one project's pipeline file; tracked in §13.
+
+Original per-workflow design (retained for the historical GitHub-oriented rationale):
 
 1. **`ci.yml`** — on every push/PR: `cargo fmt --check`, `cargo clippy -D warnings`, `cargo test` (rules/eval/search/driver, CUDA crate excluded from default test matrix), `pnpm -r test` for the JS packages. Matrix: `ubuntu-latest`, `macos-latest`, `windows-latest`.
 2. **Cross-compiled release binaries** — on tag, use `cross` (Docker-based) + a GH Actions matrix to produce `hyperchess-driver` binaries for `x86_64`/`aarch64` × Linux (musl)/macOS/Windows, attached to the GitHub Release. **Verified feasible, not just assumed**: `BitBoard` is a fixed-width `[u64; 3]` (no pointer-width dependence), and a repo-wide grep found zero `std::arch`/SIMD intrinsics, zero `asm!`, zero `transmute`, and no `target_arch` cfgs outside the intentional `wasm32` gating in `hyperchess-wasm`/`hyperchess-search`. `cargo check --target aarch64-unknown-linux-gnu` (type-check only — no cross-linker installed in this sandbox) passed clean for `hyperchess-rules`/`hyperchess-eval`/`hyperchess-search`/`hyperchess-driver` (default, non-cuda build), and `cargo check --target wasm32-unknown-unknown` passed clean for `hyperchess-wasm`. The default (non-cuda) `hyperchess-driver` dependency graph has **zero native `-sys` crates** (`cargo tree -i openssl-sys`/`curl-sys` both fail to resolve against it) — pure Rust + the `tokio`/`axum` ecosystem, which is well-trodden `cross`/musl territory. `hyperchess-search-cuda` stays x86_64+NVIDIA-only by design (§5) and is excluded from this matrix entirely, so it doesn't block multi-arch publishing of everything else. Actually producing linked `aarch64` binaries still needs either `cross` (Docker) or native ARM64 GH-hosted runners (`ubuntu-24.04-arm`) — not exercised here since no cross-linker is installed in this sandbox, but nothing in the source suggests it would fail.
@@ -387,7 +411,18 @@ Each phase should land as its own PR/commit in the new repo so history stays rev
 - MSRV (minimum supported Rust version) policy for the public crates — not yet decided, needed before the first crates.io publish.
 - Whether `hyperchess-search-cuda`'s existence in the *public* repo (even unpublished) is desired at all, given it can never build without your private `rust-cuda` checkout — alternative is to leave it out of the public repo entirely and keep GPU search exclusively in `kyrpy-hyperchess-rust`. Worth a quick gut-check before phase 4.
 - **Repo naming:** keep the on-disk folder as `hyrperchess-core`, or rename it to `hyperchess-core` now while it's still just a README + this doc (trivial `mv`, zero cost today, much more disruptive once real crates/packages/CI reference the path). Recommend renaming now if the spelling in the prompt truly was accidental — flagged, not silently done.
-- **Code hosting:** this plan's CI/CD (§7) and the research playbook (§15) both assume **GitHub** (Actions, Discussions, Sponsors, GHCR) as `hyrperchess-core`'s public home, distinct from the internal GitLab (`gitlab.kyrpy.kyrpy.com`) that `kyrpy-hyperchess-rust` and (presumably) `hyperchess-ai` stay on. No GitHub org/repo exists yet for this project — needs to be created (with credentials/2FA outside what this session can do) before Phase 0's CI can actually run.
+- **Code hosting: decided.** `hyrperchess-core` is hosted on the local self-hosted GitLab
+  (`kyrpy/hyrperchess-core` on `gitlab.kyrpy.kyrpy.com`, private), not GitHub — no GitHub org
+  exists and the user chose GitLab when asked. CI/CD (§7) has been re-implemented as GitLab CI
+  accordingly. This means the research playbook's (§15) GitHub-specific community features
+  (Discussions, Sponsors badges, GHCR) don't apply as designed — GitLab has native equivalents
+  (Issues threads, no built-in sponsors, GitLab Container Registry instead of GHCR) but the
+  playbook synthesis in §15 was written assuming GitHub. **Still open**: whether to (a) adapt
+  §15's community-bootstrap tactics to GitLab's private-instance reality (no public discovery,
+  since this GitLab instance isn't itself publicly indexed/searchable the way github.com is —
+  undermines several of §15's organic-discovery tactics), or (b) mirror to a public GitHub repo
+  later once ready, purely for public visibility while keeping GitLab as the primary/private
+  remote. Revisit before Phase 12 (docs + community bootstrap).
 - **Monorepo vs. polyrepo:** this plan keeps `hyrperchess-core` a single repo (crates/packages/apps/deploy together) rather than the research playbook's Lc0/Fairy-Stockfish-style multi-repo split (§15) — see §15 for the reasoning and the one place a future split is still warranted (dataset/model repos, once the AI training system itself goes public — not now).
 
 ---
