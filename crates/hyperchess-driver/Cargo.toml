@@ -29,8 +29,15 @@ chrono = "0.4"
 image = "0.25"
 imageproc = "0.25"
 ab_glyph = "0.2"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
+axum = "0.8"
+utoipa = { version = "5", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
 
 cust = { path = "/projects/github/rust-cuda/crates/cust", optional = true }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }

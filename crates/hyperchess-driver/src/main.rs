@@ -1,15 +1,17 @@
 //! `hyperchess` — the HyperChess driver binary.
 //!
 //! Subcommands: `play` / `perft` / `show` / `gpu-info` / `bench-eval` (CLI,
-//! from `hyperchess_driver::cli`) and `uci` (the native UCI server, from
+//! from `hyperchess_driver::cli`), `uci` (the native UCI server, from
 //! `hyperchess_driver::uci`) — see docs/hyperchess-core-extraction-plan.md §12
 //! Phase 4 for why these two previously-separate binaries
 //! (`hyperchess`/`hyperchess-uci`) were consolidated into one with
-//! subcommands (§13's "one binary, subcommands" recommendation).
+//! subcommands (§13's "one binary, subcommands" recommendation) — and `api`
+//! (the stateless REST/OpenAPI server, from `hyperchess_driver::api`, §12
+//! Phase 5).
 
 use clap::{Parser, Subcommand};
 use hyperchess_driver::cli::game::EngineConfig;
-use hyperchess_driver::{cli, uci};
+use hyperchess_driver::{api, cli, uci};
 
 const DEFAULT_OUT_DIR: &str = "./games";
 
@@ -120,6 +122,9 @@ enum Commands {
     /// Run the native UCI server (reads UCI commands from stdin, writes
     /// responses to stdout — usable by any UCI-capable GUI or client).
     Uci,
+    /// Run the stateless REST/OpenAPI API server (binds HOST:PORT, default
+    /// 0.0.0.0:8080 — see /docs for the Swagger UI once running).
+    Api,
 }
 
 /// Build the atomic progress-file payload for a dataset-gen run. Pure — no I/O — so
@@ -156,7 +161,8 @@ fn emit_progress(progress_file: &Option<String>, payload: &serde_json::Value) {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     hyperchess_rules::Helper::init();
     let parsed = Cli::parse();
 
@@ -292,6 +298,13 @@ fn main() {
         }
 
         Commands::Uci => uci::run(),
+
+        Commands::Api => {
+            if let Err(e) = api::run().await {
+                eprintln!("api server error: {e}");
+                std::process::exit(1);
+            }
+        }
     }
 }
 
