@@ -1,0 +1,26 @@
+[package]
+name = "hyperchess-search-cuda"
+version = "0.1.0"
+# Literal values, not `.workspace = true` — this crate is excluded from the
+# root workspace (see [workspace] exclude in ../../Cargo.toml, per §5), so
+# `cargo build` run standalone from this directory has no workspace context
+# to inherit from. Found by actually trying `.workspace = true` here first
+# and hitting "failed to find a workspace root".
+edition = "2021"
+license = "GPL-3.0-or-later"
+description = "HyperChess GPU (CUDA) accelerated search — batch eval, CUDA MCTS, GPU-guided alpha-beta"
+publish = false
+
+[features]
+default = []
+cuda = ["dep:cust", "dep:cust_raw", "dep:cuda_builder"]
+
+[dependencies]
+hyperchess-rules = { path = "../hyperchess-rules" }
+hyperchess-search = { path = "../hyperchess-search" }
+
+cust     = { path = "/projects/github/rust-cuda/crates/cust",     optional = true }
+cust_raw = { path = "/projects/github/rust-cuda/crates/cust_raw", default-features = false, features = ["driver"], optional = true }
+
+[build-dependencies]
+cuda_builder = { path = "/projects/github/rust-cuda/crates/cuda_builder", features = ["rustc_codegen_nvvm", "llvm19"], optional = true }

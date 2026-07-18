@@ -1,0 +1,17 @@
+[package]
+name = "hyperchess_kernels"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# Forwarded by the host's cuda_builder invocation — no-op in the kernel crate.
+cuda = []
+
+[dependencies]
+cuda_std = { path = "/projects/github/rust-cuda/crates/cuda_std" }
+hyperchess-eval = { path = "../../hyperchess-eval" }
+
+[workspace]

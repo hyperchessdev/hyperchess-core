@@ -1,0 +1,4 @@
+[build]
+# Redirect kernel build output into the workspace root target/ so there is
+# only one build directory in the project.
+target-dir = "../../../../target/kernels"
