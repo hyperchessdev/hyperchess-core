@@ -1,6 +1,6 @@
 # HyperChess Core & Driver — Open-Source Extraction & Multiplatform Implementation Plan
 
-**Status:** Phases 0–2 complete (repo bootstrap; `hyperchess-rules` and `hyperchess-eval` extracted, building, tested, clippy/fmt clean). Phase 3 (`hyperchess-search`) is next — see its row in §12 for the deferred-tests list it now also carries.
+**Status:** Phases 0–3 complete (repo bootstrap; `hyperchess-rules`, `hyperchess-eval`, `hyperchess-search` all extracted, building — native AND wasm32 — tested, clippy/fmt clean; all 5 Phase-1-deferred tests reinstated). Every crate/package/app also now gets its own `docs/` folder by convention (§3.1). Phase 4 (split `hyperchess_engine` into UCI-driver + CUDA) is next.
 **Supersedes:** `docs/refactoring_proposal.md` (kept for history; this document fuses it with the
 current architecture, closes gaps it missed, and turns it into an executable plan). Also incorporates
 findings from `docs/.research/hyperchess-A-Strategic-Playbook-for-Open-Sourcing.md` — see §15.
@@ -156,15 +156,21 @@ hyrperchess-core/
 │       ├── docker.yml               # build + push GHCR on tag
 │       └── deploy-openshift.yml     # manual/tag-gated `oc apply` to your cluster
 ├── crates/
-│   ├── hyperchess-rules/
-│   ├── hyperchess-eval/
-│   ├── hyperchess-search/
+│   ├── hyperchess-rules/            # each crate/package/app is its own "sub project" —
+│   │   ├── src/                     # Cargo-standard layout: src/ for code, tests/ and
+│   │   ├── tests/                   # examples/ stay Cargo-standard siblings (moving them
+│   │   ├── examples/                # under src/ would need an explicit [[test]]/[[example]]
+│   │   └── docs/                    # entry per file for no benefit), docs/ added per sub
+│   ├── hyperchess-eval/             # project (decided during Phase 3 kickoff, applies to
+│   │   ├── src/                     # every crate/package/app below, not just these two)
+│   │   └── docs/
+│   ├── hyperchess-search/           # (each gets the same src/[tests/][examples/]docs/ shape)
 │   ├── hyperchess-search-cuda/      # excluded from workspace `[publish]`, local-only
 │   ├── hyperchess-wasm/
 │   └── hyperchess-driver/
 │       └── src/{cli,uci,api}/
-├── packages/
-│   ├── core/                        # @hyperchess/core
+├── packages/                        # same convention: src/ + docs/ per package (npm's own
+│   ├── core/                        # idiomatic layout already puts code under src/)
 │   ├── board/                       # @hyperchess/board (2D)
 │   ├── board-3d/                    # @hyperchess/board-3d (WebGPU/WebGL, from hyperchess_3d)
 │   ├── store/                       # @hyperchess/store
@@ -174,6 +180,7 @@ hyrperchess-core/
 │   └── hyperchess-playground/       # Tauri v2 + React — developer test/demo app, THIS plan's app scope (§10a)
 │       # (a future full-featured `hyperchess-app` and a recreated training/ops app
 │       # under hyperchess-ai/ are explicitly separate, unscoped initiatives — §10b)
+│       # same convention: frontend code under src/, Rust side under src-tauri/, docs/ alongside
 ├── deploy/
 │   ├── docker/Dockerfile.driver
 │   └── openshift/{deployment,service,route,configmap}.yaml
@@ -354,7 +361,7 @@ Each phase should land as its own PR/commit in the new repo so history stays rev
 | 0 | Repo bootstrap | ✅ **Done.** `git init`, `LICENSE` (GPLv3, fetched verbatim), `README` skeleton, Cargo workspace (needed one placeholder crate — cargo errors on truly zero members, unlike pnpm), pnpm workspace, `.cargo/config.toml`+`.npmrc` build-output redirect (§9a, path verified empirically), `.github/workflows/ci.yml` (YAML-valid, can't run yet — no GitHub repo exists, §13). All local commands (`cargo build/fmt/clippy/test`, `pnpm install/build/test`, `turbo build/test`) verified to exit 0. | Low |
 | 1 | Extract `hyperchess-rules` | ✅ **Done.** Copy `src/hyperchess` minus `bots/` + `wasm.rs`, path-fix (`hyperchess_eval_core::`→`hyperchess_eval::`, `hyperchess::`→`hyperchess_rules::` in tests/examples), drop now-unused deps (rayon/num_cpus/wasm-bindgen/etc. — verified unused outside bots/wasm.rs), fix ~43 pre-existing clippy lints (mechanical/style only, verified test-green before and after). 146 tests pass, clippy/fmt clean. Deferred to Phase 3: 2 test modules in `board/mod.rs`, `tests/regression.rs`, `examples/{golden_measure,node_cap_probe}.rs` — all exercise rules *through* a searcher, so they belong in hyperchess-search's suite, not here. Not deleted anywhere — recoverable from `kyrpy-hyperchess-rust` git history. | Low |
 | 2 | Extract `hyperchess-eval` | ✅ **Done** (pulled forward — hyperchess-rules has a hard dependency on it, Phase 1 doesn't build without it). Verbatim copy of `src/hyperchess_eval_core`, only the package name changed. One pre-existing clippy fix (`manual_range_contains`). | Low |
-| 3 | Extract `hyperchess-search` | Move `bots/*` out, fix `use` paths, re-home `bot_prelude`. **Also now carries the Phase 1 deferred-tests list** (§ above): reinstate `hfen_consistency_tests`/`engine_integrity_tests` from `board/mod.rs`, `regression.rs`, `golden_measure.rs`, `node_cap_probe.rs` as this crate's own integration tests, since it can depend back on hyperchess-rules. `cargo test` green. | Medium (import surgery) |
+| 3 | Extract `hyperchess-search` | ✅ **Done.** `bots/mod.rs` promoted to `lib.rs` (crate root), `use` paths fixed, `prelude` module added (replaces rules' old `bot_prelude`). All 5 Phase-1-deferred files/tests reinstated (`tests/regression.rs`, `tests/rules_integration.rs`, 2 examples), imports split per-symbol between `hyperchess_rules::`/`hyperchess_search::`. Real gap found+fixed: `getrandom`'s "js" feature (needed for `rand` on wasm32) had been dropped from `hyperchess-rules` in Phase 1 since nothing named it directly there — caught by actually building for `--target wasm32-unknown-unknown --features wasm`, not by inspection; both crates now have a `wasm` feature and build clean natively and for wasm32. 5 more pre-existing clippy lints fixed. 174 tests pass. | Medium (import surgery) |
 | 4 | Split `hyperchess_engine` | UCI → `hyperchess-driver::uci`; CUDA → `hyperchess-search-cuda` (`publish = false`) | Medium (§5 blocker documented, not solved) |
 | 5 | Build `hyperchess-driver::api` | New axum + utoipa service, routes from §6, `/health` + `/docs` live | Medium-High (new code) |
 | 6 | Extract `hyperchess-wasm` | Merge `wasm.rs` + `hyperchess_3d`, one `wasm-pack build` target | Medium (two WASM surfaces → one) |
