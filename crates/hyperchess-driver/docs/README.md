@@ -20,6 +20,26 @@ Full architecture, extraction history, and roadmap: see the workspace-level
 [`docs/hyperchess-core-extraction-plan.md`](../../../docs/hyperchess-core-extraction-plan.md)
 (§2 component table, §6 API design, §12 Phase 4/5).
 
+## Fast local dataset generation (`hyperchess play --games N`)
+
+`--games 1` (the default) runs one game with full interactive commentary — board renders, a
+line per move. `--games N > 1` switches to **parallel bulk generation**: up to `--threads`
+games run concurrently (one OS thread each, `0` = all cores), with per-move output suppressed
+in favor of a periodic aggregate progress line. No searcher in `hyperchess-search` uses `rayon`
+internally, so this — N independent single-threaded games at once, not one game trying to
+parallelize a search that has nothing to parallelize — is the real lever for throughput.
+
+Verified with a real, timed benchmark (not just "it compiles"): 40 games, alpha-beta depth 3,
+`--threads 1` vs `--threads 8` on the same seed — **89.5s → 13.4s (6.67×)**, with `user` CPU-time
+matching the sequential total (confirming genuine parallel work, not a measurement artifact),
+and the aggregate result distribution bit-for-bit identical between runs (12 White / 14 Black /
+14 Draw in both) — parallelizing introduces no non-determinism. The one genuinely shared file
+across concurrent games, `training.plain` (`--format nnue-plain`), was separately stress-tested
+at 12 threads × 30 games (600 positions) with zero corrupted/interleaved records — safe by
+construction (`export::append_nnue_plain` buffers a whole game in memory and does one
+`OpenOptions(append=true)` `write_all()` call; POSIX `O_APPEND` makes that single syscall atomic
+across concurrent writers), not merely assumed safe.
+
 ## `cuda` feature
 
 Off by default — `cargo build` (no flags) gives a fully working CPU-only binary. With

@@ -389,8 +389,19 @@ fn export_base(out_dir: &str, timestamp: &str, game_seed: u64) -> String {
     format!("{}/{}_{:016x}", out_dir, timestamp, game_seed)
 }
 
-// Inherited from the source repo verbatim (10 params) — same treatment as
-// GameStats::new in export.rs and can_castle in hyperchess-rules (Phase 1).
+/// `verbose`: per-move/per-game commentary (board renders, one line per ply,
+/// engine/seed banner). `false` for parallel bulk dataset generation — with
+/// N games running concurrently (see `main.rs`'s `Commands::Play` handler),
+/// interleaved per-move output from every game at once is both unreadable
+/// and adds real stdout-lock contention across threads; the caller reports
+/// aggregate progress instead. `true` preserves the exact original
+/// single-game interactive experience. Export file writes and their
+/// confirmation lines (from `export::save_*`) are unconditional either way
+/// — knowing where output landed matters regardless of verbosity.
+///
+/// Inherited from the source repo otherwise verbatim (was already 10 params
+/// before this addition — same treatment as GameStats::new in export.rs and
+/// can_castle in hyperchess-rules, Phase 1).
 #[allow(clippy::too_many_arguments)]
 pub fn play_game(
     white: EngineConfig,
@@ -403,6 +414,7 @@ pub fn play_game(
     white_skill: Option<u32>,
     black_skill: Option<u32>,
     move_timeout_ms: u64,
+    verbose: bool,
 ) -> u32 {
     std::fs::create_dir_all(out_dir).ok();
 
@@ -421,16 +433,25 @@ pub fn play_game(
         GpuBackend::None => None,
     };
 
-    println!("=== HyperChess Engine (CUDA build) ===");
-    match &gpu {
-        GpuBackend::Cuda(name) => println!("GPU      : {} — batch eval active", name),
-        GpuBackend::None => println!(
-            "GPU      : not detected — CPU ({} threads)",
-            effective_threads
-        ),
+    if verbose {
+        println!("=== HyperChess Engine (CUDA build) ===");
+        match &gpu {
+            GpuBackend::Cuda(name) => println!("GPU      : {} — batch eval active", name),
+            GpuBackend::None => println!(
+                "GPU      : not detected — CPU ({} threads)",
+                effective_threads
+            ),
+        }
+        println!("Seed     : {}", game_seed);
     }
-    println!("Seed     : {}", game_seed);
 
+    // Safe to call once per concurrently-running game (see main.rs): every
+    // call in a batch requests the identical `effective_threads` value
+    // (white/black configs are shared across the whole --games run), so
+    // whichever call actually wins the race to initialize rayon's global
+    // pool sets the same size any other call would have. Only the first
+    // call in the whole process actually takes effect; the rest are
+    // harmless no-ops via `.ok()`, matching the pre-existing pattern.
     rayon::ThreadPoolBuilder::new()
         .num_threads(effective_threads)
         .build_global()
@@ -452,11 +473,15 @@ pub fn play_game(
         game_seed,
     );
 
-    println!("White    : {}", white_label);
-    println!("Black    : {}", black_label);
+    if verbose {
+        println!("White    : {}", white_label);
+        println!("Black    : {}", black_label);
+    }
 
     let mut board = Board::start_pos();
-    println!("{}", board);
+    if verbose {
+        println!("{}", board);
+    }
 
     // Seeded RNG: each move draws a snapshot for the log; random engine uses it directly.
     let mut rng = SmallRng::seed_from_u64(game_seed);
@@ -507,10 +532,12 @@ pub fn play_game(
         let hfen_after = board.get_hfen();
         move_count += 1;
 
-        println!(
-            "[{:>3}] {:5} {:8}  eval={:+5}cp  {:>4}ms  rand={:.6}  {}",
-            move_count, side_str, move_str, eval_before, think_ms, decision_rand, backend
-        );
+        if verbose {
+            println!(
+                "[{:>3}] {:5} {:8}  eval={:+5}cp  {:>4}ms  rand={:.6}  {}",
+                move_count, side_str, move_str, eval_before, think_ms, decision_rand, backend
+            );
+        }
 
         stats.push_move(MoveRecord {
             ply: move_count,
@@ -554,14 +581,16 @@ pub fn play_game(
     stats.result = result_str.to_string();
     stats.total_moves = move_count;
 
-    println!("\n=== Game Over ===");
-    println!(
-        "Result   : {} | Plies: {} | Wall: {:.1}s",
-        result_str,
-        move_count,
-        total_game_ms as f64 / 1000.0
-    );
-    println!("\nFinal position:\n{}", board);
+    if verbose {
+        println!("\n=== Game Over ===");
+        println!(
+            "Result   : {} | Plies: {} | Wall: {:.1}s",
+            result_str,
+            move_count,
+            total_game_ms as f64 / 1000.0
+        );
+        println!("\nFinal position:\n{}", board);
+    }
 
     let ts = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
     let base = export_base(out_dir, &ts, game_seed);
@@ -576,7 +605,9 @@ pub fn play_game(
         export::append_nnue_plain(&stats, &plain_path);
     }
 
-    println!("\nGame exported to {}_*", base);
+    if verbose {
+        println!("\nGame exported to {}_*", base);
+    }
     move_count
 }
 

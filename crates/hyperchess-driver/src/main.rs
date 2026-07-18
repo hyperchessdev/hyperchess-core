@@ -218,17 +218,102 @@ async fn main() {
                 random_seed
             };
 
-            let mut plies_so_far: Vec<u32> = Vec::new();
             let run_start = std::time::Instant::now();
-            for g in 1..=games {
-                if games > 1 {
-                    println!("\n─── Game {}/{} ───", g, games);
+
+            if games > 1 {
+                // Bulk dataset generation: run games concurrently, one OS
+                // thread per game, up to --threads (0 = all cores). Safe
+                // because (a) each game writes to its own uniquely-seeded
+                // export_base()-derived file set — no cross-game path
+                // collisions — and (b) append_nnue_plain's shared
+                // training.plain writer buffers a whole game into memory
+                // first and does exactly one OpenOptions(append=true)
+                // write_all() call — POSIX O_APPEND makes that one syscall
+                // atomic across concurrent writers, verified by reading
+                // export.rs's implementation before relying on it, not
+                // assumed. No searcher in hyperchess-search uses rayon
+                // internally (verified in Phase 3), so this is the only
+                // real lever for dataset-gen throughput — N independent
+                // single-threaded games in parallel, not one game trying to
+                // parallelize a search that has nothing to parallelize.
+                use rayon::prelude::*;
+                use std::sync::atomic::{AtomicU32, Ordering};
+                use std::sync::Mutex;
+
+                let effective_threads = if threads == 0 {
+                    num_cpus::get()
+                } else {
+                    threads
+                };
+                rayon::ThreadPoolBuilder::new()
+                    .num_threads(effective_threads)
+                    .build_global()
+                    .ok();
+
+                println!(
+                    "Generating {games} games across up to {effective_threads} parallel workers (white={white} black={black})..."
+                );
+
+                let plies_so_far: Mutex<Vec<u32>> = Mutex::new(Vec::with_capacity(games as usize));
+                let games_done = AtomicU32::new(0);
+
+                (1..=games).into_par_iter().for_each(|g| {
+                    let game_seed = base_seed.wrapping_add(g as u64);
+                    let plies = cli::game::play_game(
+                        white_cfg.clone(),
+                        black_cfg.clone(),
+                        max_moves,
+                        &out_dir,
+                        nnue_plain,
+                        game_seed,
+                        random_opening_plies,
+                        white_skill,
+                        black_skill,
+                        move_timeout_ms,
+                        false, // verbose — see play_game's doc comment
+                    );
+
+                    let done = games_done.fetch_add(1, Ordering::Relaxed) + 1;
+                    let snapshot = {
+                        let mut guard = plies_so_far.lock().unwrap();
+                        guard.push(plies);
+                        guard.clone()
+                    };
+                    emit_progress(
+                        &progress_file,
+                        &build_progress_payload(
+                            done,
+                            games,
+                            &snapshot,
+                            run_start.elapsed().as_secs_f64(),
+                            &white,
+                            &black,
+                        ),
+                    );
+                    let elapsed = run_start.elapsed().as_secs_f64();
+                    if done.is_multiple_of(10) || done == games {
+                        println!(
+                            "[{done:>6}/{games}] {:.1}s elapsed, {:.2} games/s",
+                            elapsed,
+                            done as f64 / elapsed.max(0.001)
+                        );
+                    }
+                });
+
+                let elapsed = run_start.elapsed().as_secs_f64();
+                println!(
+                    "\nDone: {games} games in {elapsed:.1}s ({:.2} games/s) → {out_dir}",
+                    games as f64 / elapsed.max(0.001)
+                );
+                if nnue_plain {
+                    println!("NNUE training data → {out_dir}/training.plain");
                 }
-                // Derive a unique seed per game so multi-game runs are independent.
-                let game_seed = base_seed.wrapping_add(g as u64);
+            } else {
+                // Single game: unchanged interactive behavior (verbose output).
+                let game_seed = base_seed.wrapping_add(1);
                 let plies = cli::game::play_game(
-                    white_cfg.clone(),
-                    black_cfg.clone(),
+                    white_cfg,
+                    black_cfg,
                     max_moves,
                     &out_dir,
                     nnue_plain,
@@ -237,23 +322,19 @@ async fn main() {
                     white_skill,
                     black_skill,
                     move_timeout_ms,
+                    true, // verbose
                 );
-                plies_so_far.push(plies);
                 emit_progress(
                     &progress_file,
                     &build_progress_payload(
-                        g,
-                        games,
-                        &plies_so_far,
+                        1,
+                        1,
+                        &[plies],
                         run_start.elapsed().as_secs_f64(),
                         &white,
                         &black,
                     ),
                 );
-            }
-
-            if games > 1 && nnue_plain {
-                println!("\nNNUE training data → {}/training.plain", out_dir);
             }
         }
 
