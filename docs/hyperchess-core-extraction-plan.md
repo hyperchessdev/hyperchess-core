@@ -1,6 +1,6 @@
 # HyperChess Core & Driver — Open-Source Extraction & Multiplatform Implementation Plan
 
-**Status:** Draft for review — no core/driver/SDK code has been moved yet (a plain workspace skeleton and a synced copy of this doc already exist at the target path, done as low-risk protective scaffolding, not extraction).
+**Status:** Phase 0 complete (repo bootstrap — LICENSE, verified Cargo/pnpm workspaces, CI skeleton). Phases 1+ (actual engine/driver/SDK extraction) not started.
 **Supersedes:** `docs/refactoring_proposal.md` (kept for history; this document fuses it with the
 current architecture, closes gaps it missed, and turns it into an executable plan). Also incorporates
 findings from `docs/.research/hyperchess-A-Strategic-Playbook-for-Open-Sourcing.md` — see §15.
@@ -351,7 +351,7 @@ Each phase should land as its own PR/commit in the new repo so history stays rev
 
 | # | Phase | Output | Risk |
 |---|---|---|---|
-| 0 | Repo bootstrap | `git init`, `LICENSE` (GPLv3), skeleton `README`, empty Cargo/pnpm workspaces, CI skeleton (fails green on empty workspace) | Low |
+| 0 | Repo bootstrap | ✅ **Done.** `git init`, `LICENSE` (GPLv3, fetched verbatim), `README` skeleton, Cargo workspace (needed one placeholder crate — cargo errors on truly zero members, unlike pnpm), pnpm workspace, `.cargo/config.toml`+`.npmrc` build-output redirect (§9a, path verified empirically), `.github/workflows/ci.yml` (YAML-valid, can't run yet — no GitHub repo exists, §13). All local commands (`cargo build/fmt/clippy/test`, `pnpm install/build/test`, `turbo build/test`) verified to exit 0. | Low |
 | 1 | Extract `hyperchess-rules` | Copy `src/hyperchess` minus `bots/`, fix `Cargo.toml` path, `cargo test` green | Low |
 | 2 | Extract `hyperchess-eval` | Copy `src/hyperchess_eval_core`, `cargo test` green | Low |
 | 3 | Extract `hyperchess-search` | Move `bots/*` out, fix `use` paths, re-home `bot_prelude`, `cargo test` green | Medium (import surgery) |

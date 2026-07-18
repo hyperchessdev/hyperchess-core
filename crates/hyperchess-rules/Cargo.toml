@@ -1,0 +1,22 @@
+[package]
+name = "hyperchess-rules"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "HyperChess board representation, move generation, and legality — a 12x12 chess variant with Eagle and Hawk pieces"
+
+[dependencies]
+hyperchess-eval = { path = "../hyperchess-eval" }
+bitflags = "2"
+rand = "0.8"
+lazy_static = "1"
+
+# NOTE vs. the source repo's src/hyperchess/Cargo.toml: rayon, num_cpus,
+# wasm-bindgen, console_error_panic_hook, getrandom, and js-sys are all
+# dropped. Verified (not assumed) that nothing outside src/bots/ and
+# src/wasm.rs references any of them — both live elsewhere now
+# (hyperchess-search and hyperchess-wasm respectively, per the extraction
+# plan's component table), so this crate never needed them. Also dropped
+# `crate-type = ["cdylib", "rlib"]` — that was for wasm-pack building this
+# crate directly (via wasm.rs, which no longer lives here); the default rlib
+# is all a workspace dependency needs. hyperchess-wasm picks up cdylib later.
