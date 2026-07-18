@@ -34,7 +34,7 @@ pub fn hypermove_to_hsan(board: &Board, m: HyperMove) -> String {
         if piece == Piece::WhitePawn || piece == Piece::BlackPawn {
             // For pawn captures, it's "axb3" format
             let pawn_file = (b'a' + src.0 % 12) as char;
-            hsan = format!("{}x{}", pawn_file, &hsan);
+            hsan = format!("{}x{}", pawn_file, hsan);
         } else {
             // For piece captures, it's "Rxd1" format (insert 'x' before destination)
             hsan.insert(hsan.len().saturating_sub(2), 'x');
