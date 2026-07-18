@@ -60,9 +60,16 @@ variables:
 # cuda is passed, so the stub's actual (empty) contents never matter.
 .stub-cust-crate:
   before_script:
-    - mkdir -p /projects/github/rust-cuda/crates/cust/src
-    - 'printf "[package]\nname = \"cust\"\nversion = \"0.3.2\"\nedition = \"2021\"\n" > /projects/github/rust-cuda/crates/cust/Cargo.toml'
-    - touch /projects/github/rust-cuda/crates/cust/src/lib.rs
+    # Three local rust-cuda crates, not just `cust` — hyperchess-search-cuda's own Cargo.toml
+    # (itself a real path dep of hyperchess-driver: ../hyperchess-search-cuda, which DOES exist
+    # in-repo) adds `cust_raw` and `cuda_builder` on top. Found by iterating: each stub fixed one
+    # "failed to read .../Cargo.toml: No such file or directory" and uncovered the next hop.
+    - for c in cust:0.3.2 cust_raw:0.11.3 cuda_builder:0.3.0; do
+        name="${c%%:*}"; version="${c##*:}";
+        mkdir -p "/projects/github/rust-cuda/crates/${name}/src";
+        printf '[package]\nname = "%s"\nversion = "%s"\nedition = "2021"\n' "$name" "$version" > "/projects/github/rust-cuda/crates/${name}/Cargo.toml";
+        touch "/projects/github/rust-cuda/crates/${name}/src/lib.rs";
+      done
 
 rust:fmt:
   stage: lint
