@@ -1,0 +1,27 @@
+[package]
+name = "hyperchess-search"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "HyperChess search algorithms — alpha-beta, iterative deepening, MCTS, and the anytime TimedSearcher"
+
+[features]
+# Gates timed::clock's js_sys::Date::now() path (browsers can't interrupt a
+# synchronous WASM call from JS, so the search itself watches the clock), AND
+# forwards to hyperchess-rules' own "wasm" feature — this crate also calls
+# rand::thread_rng() (RandomBot, mcts.rs), which needs the same
+# getrandom "js" feature unification on wasm32. hyperchess-wasm (Phase 6)
+# depends on this crate with the feature enabled.
+wasm = ["dep:js-sys", "hyperchess-rules/wasm"]
+
+[dependencies]
+hyperchess-rules = { path = "../hyperchess-rules" }
+rand = "0.8"
+js-sys = { version = "0.3", optional = true }
+
+# NOTE vs. the source repo's src/hyperchess/Cargo.toml: rayon and num_cpus
+# are dropped too — verified (grep) that nothing in src/bots/ actually
+# references either name, matching the same finding for hyperchess-rules in
+# Phase 1. wasm-bindgen/console_error_panic_hook/getrandom are also dropped:
+# only js_sys::Date::now() is used here (in timed.rs's clock module), nothing
+# else from the wasm-bindgen family.
