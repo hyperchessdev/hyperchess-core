@@ -8,12 +8,15 @@
 # `.github/workflows/ci.yml` is kept only as a historical reference for a possible future GitHub
 # mirror (§13 open item) — it is not wired to run anywhere.
 #
-# Known gap, flagged not hidden: as of this pipeline's creation, the GitLab instance
-# (gitlab.kyrpy.kyrpy.com) has ZERO registered CI runners (verified via
-# GET /api/v4/runners/all). Every job below will queue as "pending" until a runner is
-# registered against this instance — that's shared GitLab-instance infrastructure, out of
-# scope for a single project's pipeline definition. See docs/hyperchess-core-extraction-plan.md
-# §13 for tracking.
+# A real GitLab Runner (Kubernetes executor, on OpenShift, namespace kyrpy-server) is now
+# registered against this instance — see /projects/kyrpy-server/kyrpy-srv-gitlab/manifests/
+# 09-11-runner-*.yaml. Verified end-to-end with real triggered pipelines, not just `ci/lint`:
+# jobs genuinely schedule, spawn real pod, clone, and run their scripts.
+#
+# All `image:` references are fully-qualified (docker.io/library/...), not short names
+# (rust:1-bookworm) — this cluster's unqualified-image short-name resolution tries
+# registry.connect.redhat.com first and 404s before ever reaching docker.io. Hit this for real
+# getting the runner's own image up; applied the same fix here pre-emptively.
 
 stages:
   - lint
@@ -43,10 +46,29 @@ variables:
     - .cargo-home/registry/
     - target/
 
+# hyperchess-driver's Cargo.toml has an unconditional (optional = true, but still PRESENT)
+# `cust = { path = "/projects/github/rust-cuda/crates/cust" }` dependency for the cuda feature
+# (§5 of the extraction plan). Discovered the hard way, via this pipeline's first real run: Cargo
+# must read every path dependency's manifest to build its resolver graph regardless of whether
+# the optional feature enabling it is active — `cargo fmt --all`/`clippy --workspace`/
+# `test --workspace` all failed with "failed to read .../cust/Cargo.toml: No such file or
+# directory" on a fresh clone, even though nothing in these jobs ever builds with --features cuda.
+# This is a known Cargo limitation (rust-lang/cargo#4544 and similar), not something fixable via
+# CI job flags alone. Fix: seed a minimal stub manifest (name/version matching the real crate,
+# see crates/hyperchess-search-cuda/README or /projects/github/rust-cuda locally) at that exact
+# path so `cargo metadata` can structurally resolve it — it is never compiled unless --features
+# cuda is passed, so the stub's actual (empty) contents never matter.
+.stub-cust-crate:
+  before_script:
+    - mkdir -p /projects/github/rust-cuda/crates/cust/src
+    - 'printf "[package]\nname = \"cust\"\nversion = \"0.3.2\"\nedition = \"2021\"\n" > /projects/github/rust-cuda/crates/cust/Cargo.toml'
+    - touch /projects/github/rust-cuda/crates/cust/src/lib.rs
+
 rust:fmt:
   stage: lint
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - rustup component add rustfmt
   script:
     - cargo fmt --all --check
@@ -55,9 +77,10 @@ rust:fmt:
 
 rust:clippy:
   stage: lint
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
   cache: *cargo_cache
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - rustup component add clippy
   script:
     # crates/hyperchess-search-cuda is workspace-excluded (Cargo.toml) and never touched here —
@@ -68,8 +91,10 @@ rust:clippy:
 
 rust:test:
   stage: test
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
   cache: *cargo_cache
+  before_script:
+    - !reference [.stub-cust-crate, before_script]
   script:
     - cargo test --workspace
   rules:
@@ -77,13 +102,14 @@ rust:test:
 
 js:build-test:
   stage: test
-  image: node:22-bookworm
+  image: docker.io/library/node:22-bookworm
   cache:
     key:
       files: [pnpm-lock.yaml]
     paths:
       - .pnpm-store/
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - corepack enable
     - corepack prepare pnpm@latest --activate
     # packages/wasm's build script shells out to `cargo`/`wasm-pack` — needed for `pnpm -r build`.
@@ -118,7 +144,9 @@ js:build-test:
 
 release:linux-x86_64:
   stage: release-binaries
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
+  before_script:
+    - !reference [.stub-cust-crate, before_script]
   script:
     - cargo build --release --target x86_64-unknown-linux-gnu -p hyperchess-driver
   artifacts:
@@ -130,10 +158,11 @@ release:linux-x86_64:
 
 release:linux-aarch64:
   stage: release-binaries
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
   variables:
     CROSS_CONTAINER_ENGINE: podman
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - apt-get update && apt-get install -y --no-install-recommends podman
     - mkdir -p /etc/containers
     - printf '[storage]\ndriver = "vfs"\n' > /etc/containers/storage.conf
@@ -150,8 +179,9 @@ release:linux-aarch64:
 
 release:wasm:
   stage: release-binaries
-  image: node:22-bookworm
+  image: docker.io/library/node:22-bookworm
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
     - . "$HOME/.cargo/env"
     - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
@@ -176,7 +206,9 @@ release:wasm:
 
 publish:crates-dry-run:
   stage: publish
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
+  before_script:
+    - !reference [.stub-cust-crate, before_script]
   script:
     - for c in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm hyperchess-driver; do
         echo "--- cargo publish --dry-run -p $c ---";
@@ -187,7 +219,9 @@ publish:crates-dry-run:
 
 publish:crates:
   stage: publish
-  image: rust:1-bookworm
+  image: docker.io/library/rust:1-bookworm
+  before_script:
+    - !reference [.stub-cust-crate, before_script]
   script:
     - for c in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm hyperchess-driver; do
         cargo publish -p "$c" --token "$CARGO_REGISTRY_TOKEN" || exit 1;
@@ -206,8 +240,9 @@ publish:crates:
 
 publish:npm-dry-run:
   stage: publish
-  image: node:22-bookworm
+  image: docker.io/library/node:22-bookworm
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - corepack enable
     - corepack prepare pnpm@latest --activate
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
@@ -222,8 +257,9 @@ publish:npm-dry-run:
 
 publish:npm:
   stage: publish
-  image: node:22-bookworm
+  image: docker.io/library/node:22-bookworm
   before_script:
+    - !reference [.stub-cust-crate, before_script]
     - corepack enable
     - corepack prepare pnpm@latest --activate
     - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target wasm32-unknown-unknown
