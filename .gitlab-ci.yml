@@ -103,8 +103,13 @@ js:build-test:
 # ---------------------------------------------------------------------------
 #
 # Native x86_64-unknown-linux-gnu needs no cross toolchain. aarch64-unknown-linux-gnu uses
-# `cross` (Docker-based), which needs the runner's Docker executor configured for
-# privileged/DinD mode — a runner-config prerequisite, not something this file can guarantee.
+# `cross` (container-based) with **podman**, not Docker — see ~/.claude/skills/podman/SKILL.md,
+# the org-wide default container engine. `cross` has native podman support via
+# CROSS_CONTAINER_ENGINE=podman, no docker:dind service or Docker socket needed. Podman's
+# storage driver is forced to `vfs` (see the job below) specifically so this job needs no
+# elevated pod privileges (no --privileged, no /dev/fuse) on the GitLab Runner's Kubernetes
+# executor, which runs job pods under OpenShift's default `restricted` SCC — at the cost of no
+# copy-on-write layer caching, acceptable for an infrequent (tag-only) job.
 # macOS/Windows targets are NOT included: this self-hosted GitLab has no native macOS/Windows
 # runners (unlike GitHub Actions' free hosted matrix the original plan assumed) — flagged as an
 # open item in §13, not silently dropped. Verified buildable in principle for both targets via
@@ -127,11 +132,11 @@ release:linux-aarch64:
   stage: release-binaries
   image: rust:1-bookworm
   variables:
-    DOCKER_HOST: tcp://docker:2375
-    DOCKER_TLS_CERTDIR: ""
-  services:
-    - docker:dind
+    CROSS_CONTAINER_ENGINE: podman
   before_script:
+    - apt-get update && apt-get install -y --no-install-recommends podman
+    - mkdir -p /etc/containers
+    - printf '[storage]\ndriver = "vfs"\n' > /etc/containers/storage.conf
     - rustup target add aarch64-unknown-linux-gnu
     - cargo install cross --git https://github.com/cross-rs/cross
   script:
