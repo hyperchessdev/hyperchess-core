@@ -241,12 +241,23 @@ publish:crates:
 # 4. `release-npm` — npm publish (was release-npm.yml in §7 item 4)
 # ---------------------------------------------------------------------------
 #
-# Same token gap as crates: real `npm publish` needs an NPM_TOKEN CI/CD variable not yet
-# configured. `pnpm publish --dry-run` runs unconditionally on tags as a smoke check.
-
+# `publish:npm-dry-run` runs unconditionally on tags as a smoke check against whatever
+# NPM_REGISTRY_URL currently points at.
+#
+# `publish:npm` (real publish) currently targets the LOCAL private registry
+# (https://npm.kyrpy.kyrpy.com), not the public npmjs.org the extraction plan's §9b originally
+# intended as the eventual default — an explicit, documented decision (not a workaround): a real
+# npmjs.org publish token needs an npmjs.com account for the @hyperchess scope, gated behind 2FA
+# for anyone with publish rights, which can't be minted non-interactively from this session. The
+# local registry's NPM_TOKEN was minted via its /-/npm/v1/tokens API (documented in the
+# kyrpy-npm-repo skill) and is already set as this project's CI/CD variable. Switching to public
+# npm later is a one-variable change (NPM_REGISTRY_URL) once that token exists — see §9/§13 of
+# the extraction plan.
 publish:npm-dry-run:
   stage: publish
   image: docker.io/library/node:22-bookworm
+  variables:
+    NPM_REGISTRY_URL: "https://npm.kyrpy.kyrpy.com/"
   before_script:
     - !reference [.stub-cust-crate, before_script]
     - corepack enable
@@ -257,13 +268,15 @@ publish:npm-dry-run:
     - pnpm install --frozen-lockfile
   script:
     - pnpm run build
-    - pnpm -r publish --dry-run --access public --no-git-checks
+    - pnpm -r publish --dry-run --access public --no-git-checks --registry "$NPM_REGISTRY_URL"
   rules:
     - if: '$CI_COMMIT_TAG'
 
 publish:npm:
   stage: publish
   image: docker.io/library/node:22-bookworm
+  variables:
+    NPM_REGISTRY_URL: "https://npm.kyrpy.kyrpy.com/"
   before_script:
     - !reference [.stub-cust-crate, before_script]
     - corepack enable
@@ -272,10 +285,11 @@ publish:npm:
     - . "$HOME/.cargo/env"
     - curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
     - pnpm install --frozen-lockfile
-    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc-publish
+    - REGISTRY_HOST=$(echo "$NPM_REGISTRY_URL" | sed -E 's#^https?://##; s#/$##')
+    - echo "//${REGISTRY_HOST}/:_authToken=${NPM_TOKEN}" > .npmrc-publish
   script:
     - pnpm run build
-    - pnpm -r publish --access public --no-git-checks --userconfig .npmrc-publish
+    - pnpm -r publish --access public --no-git-checks --registry "$NPM_REGISTRY_URL" --userconfig .npmrc-publish
   rules:
     - if: '$CI_COMMIT_TAG && $NPM_TOKEN'
       when: manual
