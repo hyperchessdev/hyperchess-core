@@ -1,9 +1,0 @@
-# Resolution: Release pipeline dry-run test
-
-## Validation Checklist
-- [ ] All gauntlet steps green
-- [ ] Secret scans zero hits
-- [ ] Registry dry-runs validated
-
-## Outcomes / Summary
-(tbd)
