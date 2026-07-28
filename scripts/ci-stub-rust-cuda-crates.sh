@@ -45,5 +45,7 @@ for name in "${!VERSIONS[@]}"; do
       done
     fi
   } > "${dir}/Cargo.toml"
-  touch "${dir}/src/lib.rs"
+  # Newline-terminated comment: `cargo fmt --all` formats path dependencies
+  # too, and a zero-byte lib.rs fails `--check` (rustfmt adds a newline).
+  printf '// rust-cuda stub for CI manifest resolution; never compiled.\n' > "${dir}/src/lib.rs"
 done

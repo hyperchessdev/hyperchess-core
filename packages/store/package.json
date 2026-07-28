@@ -38,8 +38,8 @@
   },
   "peerDependencies": {
     "pg": "^8.0.0",
-    "better-sqlite3": "^8.0.0",
-    "firebase": "^9.0.0",
+    "better-sqlite3": "^8.0.0 || ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",
+    "firebase": "^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0",
     "@supabase/supabase-js": "^2.0.0"
   },
   "peerDependenciesMeta": {
@@ -60,6 +60,7 @@
     "@hyperchess/core": "workspace:*"
   },
   "devDependencies": {
+    "firebase": "^12.0.0",
     "typescript": "^5.2.0",
     "vitest": "^0.34.0"
   },

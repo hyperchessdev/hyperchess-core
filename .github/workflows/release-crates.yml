@@ -39,7 +39,22 @@ jobs:
           # absolute path; cargo must load those manifests even though the cuda
           # feature is never enabled here. See the script header for details.
           case "$(uname -s)" in
-            MINGW*|MSYS*) export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda" ;;
+            MINGW*|MSYS*)
+              # cargo resolves the unix-style path against the working drive.
+              export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda"
+              ;;
+            Darwin)
+              # macOS seals the root filesystem — /projects cannot exist. Drop
+              # the driver crate (the only member reaching those paths) from
+              # the workspace on this runner; driver coverage stays on Linux
+              # and Windows.
+              sed -i '' 's|"crates/hyperchess-search-cuda",|"crates/hyperchess-search-cuda",\n    "crates/hyperchess-driver",|' Cargo.toml
+              exit 0
+              ;;
+            *)
+              sudo mkdir -p /projects/github
+              sudo chown "$(id -un)" /projects/github
+              ;;
           esac
           bash scripts/ci-stub-rust-cuda-crates.sh
       - uses: dtolnay/rust-toolchain@stable
