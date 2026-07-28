@@ -13,7 +13,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Stub local rust-cuda path deps (absent on CI runners)
         shell: bash
         run: |
@@ -55,7 +55,7 @@ jobs:
   wasm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Stub local rust-cuda path deps (absent on CI runners)
         shell: bash
         run: |
@@ -90,7 +90,7 @@ jobs:
   js:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Stub local rust-cuda path deps (absent on CI runners)
         shell: bash
         run: |
