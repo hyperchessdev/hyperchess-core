@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/scene.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! The actual HyperChess 3D scene: board tiles, piece instances, highlight
 //! markers, camera, and the frame render. Built on top of the bare wgpu context
 //! in `gpu.rs`. Coordinate convention matches the 2D canvas renderer
@@ -143,6 +149,10 @@ const PIECE_OBJ: [&str; 8] = [
     include_str!("../assets/pieces/hawk.obj"),
 ];
 
+/// Allocate a depth attachment matching the current surface size.
+///
+/// Must be re-created on every resize: a depth texture cannot be resized in
+/// place, and a mismatch against the color attachment is a validation error.
 fn create_depth_view(
     device: &wgpu::Device,
     config: &wgpu::SurfaceConfiguration,
@@ -168,6 +178,12 @@ fn create_depth_view(
     )
 }
 
+/// The whole renderer: GPU context, one shared pipeline, static meshes, and the
+/// board/selection state the next frame will be drawn from.
+///
+/// Holds no reference to the rules engine — everything it knows about the game
+/// arrives as the 144-byte encoding through [`Scene::set_board`], which is what
+/// lets this module build without `hyperchess-rules`.
 pub struct Scene {
     ctx: GpuContext,
     pipeline: wgpu::RenderPipeline,
@@ -205,9 +221,14 @@ struct MoveAnim {
     duration_ms: f64,
 }
 
+/// Glide duration for a move animation.
 const ANIM_DURATION_MS: f64 = 300.0;
+/// Peak of the arc a moving piece traces, in board units — enough to read as a
+/// lift over the intervening pieces without looking like a jump.
 const ANIM_HOP_HEIGHT: f32 = 0.18;
 
+/// High-resolution timestamp for animation, or `0.0` outside a window context
+/// (which simply makes animations complete instantly rather than fail).
 fn now_ms() -> f64 {
     web_sys::window()
         .and_then(|w| w.performance())
@@ -215,11 +236,16 @@ fn now_ms() -> f64 {
         .unwrap_or(0.0)
 }
 
+/// Decelerating ease for the move glide: fast departure, soft landing.
 fn ease_out_cubic(t: f32) -> f32 {
     1.0 - (1.0 - t).powi(3)
 }
 
 impl Scene {
+    /// Stand up the full renderer against `canvas`.
+    ///
+    /// Builds every piece mesh once here rather than per frame — geometry is
+    /// static for the life of the scene, so drawing is pure instancing.
     pub async fn new(canvas: HtmlCanvasElement) -> Result<Self, String> {
         let ctx = GpuContext::new(canvas).await?;
         let device = &ctx.device;
@@ -399,20 +425,28 @@ impl Scene {
         })
     }
 
+    /// Resize the surface and rebuild the depth attachment to match.
     pub fn resize(&mut self, width: u32, height: u32) {
         self.ctx.resize(width, height);
         let (view, _) = create_depth_view(&self.ctx.device, &self.ctx.config);
         self.depth_view = view;
     }
 
+    /// Apply a camera rotation delta, in radians.
     pub fn orbit(&mut self, dyaw: f32, dpitch: f32) {
         self.camera.orbit(dyaw, dpitch);
     }
 
+    /// Scale the camera distance by `factor`.
     pub fn zoom(&mut self, factor: f32) {
         self.camera.zoom(factor);
     }
 
+    /// Replace the drawn position from the 144-byte encoding.
+    ///
+    /// A short slice is accepted and the remainder cleared rather than
+    /// rejected — a truncated buffer from JS should leave a partially empty
+    /// board, not trap the wasm module mid-frame.
     pub fn set_board(&mut self, board: &[u8], flipped: bool) {
         let n = board.len().min(144);
         self.board[..n].copy_from_slice(&board[..n]);
@@ -449,6 +483,9 @@ impl Scene {
         self.anim.is_some()
     }
 
+    /// Set the highlight overlays drawn on top of the board: the selected
+    /// square, its legal destinations, the previous move, and a king in check.
+    /// Purely presentational — none of this feeds back into the game state.
     pub fn set_selection(
         &mut self,
         selected: Option<u8>,
@@ -476,6 +513,12 @@ impl Scene {
         world_xz_to_square(hit.x, hit.z, self.flipped)
     }
 
+    /// Draw one frame from the current board, selection, and animation state.
+    ///
+    /// A surface texture that is neither success nor suboptimal (lost, or
+    /// out-of-date after a canvas resize) causes a reconfigure and an early
+    /// return: skipping a frame is correct here, since the caller's render loop
+    /// will come back next tick with a valid swapchain.
     pub fn render(&mut self) {
         let frame = match self.ctx.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(f) => f,

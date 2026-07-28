@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/move_list.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! MoveList — fixed-size array of moves.
 
 use super::masks::MAX_MOVES;
@@ -95,6 +101,8 @@ pub struct ScoringMoveList {
 }
 
 impl ScoringMoveList {
+    /// An empty list. Backed by a fixed `MAX_MOVES` array rather than a `Vec`
+    /// so move generation in the search hot path never allocates.
     pub fn new() -> Self {
         ScoringMoveList {
             inner: [ScoringMove::null(); MAX_MOVES],
@@ -102,28 +110,40 @@ impl ScoringMoveList {
         }
     }
 
+    /// Append a scored move.
+    ///
+    /// Overflow past `MAX_MOVES` is only a `debug_assert`: the bound exceeds
+    /// any reachable HyperChess position's move count, so a release build
+    /// pays nothing for a check that should never fire.
     pub fn push(&mut self, m: ScoringMove) {
         debug_assert!(self.len < MAX_MOVES);
         self.inner[self.len] = m;
         self.len += 1;
     }
 
+    /// Append a move with score 0, to be filled in by the ordering pass.
     pub fn push_move(&mut self, m: HyperMove) {
         self.push(ScoringMove::new(m));
     }
 
+    /// Number of moves pushed so far, not the backing array's capacity.
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Whether no moves have been pushed.
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
+    /// The pushed moves only — the unused tail of the backing array is not
+    /// exposed.
     pub fn as_slice(&self) -> &[ScoringMove] {
         &self.inner[..self.len]
     }
 
+    /// Mutable view of the pushed moves, used by the ordering pass to write
+    /// scores in place.
     pub fn as_mut_slice(&mut self) -> &mut [ScoringMove] {
         &mut self.inner[..self.len]
     }

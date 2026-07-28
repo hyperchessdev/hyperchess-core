@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/store
+// File: packages/store/src/types/game-store.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { GameRecord, GameQueryOptions, Unsubscribe } from './game-record';
 
 /**
@@ -76,7 +82,15 @@ export interface GameStore {
 }
 
 /**
- * Check if a game store is online/offline
+ * Check if a game store is reachable, without letting a backend failure escape.
+ *
+ * Wraps `isHealthy()` so that a driver-level throw (connection refused, expired
+ * credentials) reads as "offline" rather than crashing the caller — the intended
+ * use is an availability probe on a sync path, not error reporting.
+ *
+ * @param store - Store to probe.
+ * @returns `true` only if `isHealthy()` resolved `true`; `false` if it resolved
+ *   `false` or threw.
  */
 export async function isStoreOnline(store: GameStore): Promise<boolean> {
   try {
@@ -87,7 +101,20 @@ export async function isStoreOnline(store: GameStore): Promise<boolean> {
 }
 
 /**
- * Sync games between two stores (useful for offline→online sync)
+ * Copy games from one store into another, one record at a time.
+ *
+ * Best-effort and non-transactional: a game that fails to save is logged and
+ * skipped so a single bad record cannot abort the whole sync, which matters when
+ * draining an offline queue on reconnect. Records are not deleted from the
+ * source, so this is a copy rather than a move.
+ *
+ * @param fromStore - Source of truth to read from.
+ * @param toStore - Destination the games are written into.
+ * @param options - `userId` restricts the copy to one owner's games;
+ *   `overwrite` deletes the destination record first so the source version wins
+ *   outright instead of being merged by the destination's upsert semantics.
+ * @returns How many games were saved successfully — may be fewer than the number
+ *   read from the source.
  */
 export async function syncStores(
   fromStore: GameStore,

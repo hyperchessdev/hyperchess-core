@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/bin/gen_assets.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Generates the placeholder primitive piece models under `assets/pieces/*.obj`.
 //!
 //! Run with `cargo run -p hyperchess-wasm --bin gen_assets`. Output files are plain

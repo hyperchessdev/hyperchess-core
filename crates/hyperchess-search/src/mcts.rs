@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/mcts.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Monte Carlo Tree Search (UCT) for HyperChess.
 //!
 //! Uses static-evaluation rollouts instead of random playouts, which is far
@@ -32,11 +38,22 @@ const C_UCT: f64 = 1.414; // √2
 
 // ── Arena node ────────────────────────────────────────────────────────────────
 
+/// One node of the MCTS tree.
+///
+/// Nodes live in a flat arena and refer to each other by index rather than by
+/// pointer, which is what lets the tree be mutated during backpropagation
+/// without fighting the borrow checker over a parent/child cycle.
 pub struct MctsNode {
+    /// The move that led here from the parent; a null move at the root.
     pub mov: HyperMove,
+    /// Arena index of the parent, or `None` at the root.
     pub parent: Option<usize>,
+    /// Arena indices of expanded children.
     pub children: Vec<usize>,
+    /// Moves not yet expanded. A node is fully expanded once this is empty,
+    /// which is the condition for switching from expansion to UCT selection.
     pub unexplored: Vec<HyperMove>,
+    /// Simulations that passed through this node — the UCT denominator.
     pub visits: u32,
     /// Cumulative score from **this node's side-to-move** perspective.
     pub value: f64,
@@ -44,6 +61,9 @@ pub struct MctsNode {
 }
 
 impl MctsNode {
+    /// Create a node for the position `board`, generating and shuffling its
+    /// move list up front so expansion order does not simply follow movegen
+    /// order.
     pub fn new(mov: HyperMove, parent: Option<usize>, board: &Board) -> Self {
         let moves = board.generate_moves();
         let terminal = moves.is_empty() || board.is_game_over();
@@ -420,6 +440,8 @@ impl Default for MctsSearcher {
 }
 
 impl MctsSearcher {
+    /// A searcher with an explicit simulation budget. Pass `0` to derive the
+    /// budget from the caller's depth instead — see the note in `best_move`.
     pub fn new(simulations: u32) -> Self {
         MctsSearcher { simulations }
     }

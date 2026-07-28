@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/piece_type.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! The `PieceType` enum (kind of piece, side-agnostic) and move-generation kinds.
 
 use std::fmt;
@@ -15,18 +21,36 @@ pub const ALL_PIECE_TYPES: [PieceType; 8] = [
 ];
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+/// Which subset of moves a generation pass should emit.
+///
+/// `Evasions` and `NonEvasions` are the in-check / not-in-check split: when the
+/// side to move is in check, only evasions can be legal, so generating that
+/// subset directly is cheaper than generating everything and filtering.
 pub enum GenTypes {
+    /// Every pseudo-legal move.
     All,
+    /// Captures only, including en passant and capture-promotions.
     Captures,
+    /// Non-capturing moves only.
     Quiets,
+    /// Quiet moves that give check — used by quiescence extensions.
     QuietChecks,
+    /// Moves that answer an existing check.
     Evasions,
+    /// Everything except evasions, for when the side to move is not in check.
     NonEvasions,
 }
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+/// A colourless piece kind.
+///
+/// The range is deliberately wider than the eight real kinds: `None` is the
+/// empty-square marker and `All` is a table sentinel for "every piece",
+/// notably the occupancy bitboard slot. [`PieceType::is_real`] is the test that
+/// excludes both.
 pub enum PieceType {
+    /// Empty square / no piece.
     None = 0,
     P = 1,
     N = 2,
@@ -54,16 +78,22 @@ impl PieceType {
         }
     }
 
+    /// Whether this is the empty-square marker.
     #[inline(always)]
     pub fn is_none(self) -> bool {
         self == PieceType::None
     }
 
+    /// Whether this is anything other than [`PieceType::None`]. Note this is
+    /// still true for the [`PieceType::All`] sentinel — use
+    /// [`PieceType::is_real`] to exclude it too.
     #[inline(always)]
     pub fn is_some(self) -> bool {
         !self.is_none()
     }
 
+    /// Whether this names an actual piece kind, excluding both the `None`
+    /// marker and the `All` sentinel.
     #[inline(always)]
     pub fn is_real(self) -> bool {
         self != PieceType::None && self != PieceType::All

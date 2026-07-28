@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search-cuda
+// File: crates/hyperchess-search-cuda/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! GPU (CUDA) accelerated search — batch position evaluation, CUDA MCTS, and
 //! GPU-guided alpha-beta. Depends on both `hyperchess-rules` and
 //! `hyperchess-search` (GPU batch eval augments, not replaces, CPU search

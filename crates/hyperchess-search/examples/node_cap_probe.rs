@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/examples/node_cap_probe.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Probe: what search depth does a given node budget actually buy?
 //!
 //! The web WASM worker (engine-worker.js `best_move_strategic`) runs strategic/pro

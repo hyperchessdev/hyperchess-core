@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/examples/wgsl_check.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Dumps `(encoding, side_to_move, engine_eval)` for a set of positions as JSON
 //! lines, so the WGSL shader's evaluation (ported to JS in tools/wgsl_check.mjs)
 //! can be cross-validated against the authoritative engine evaluator.

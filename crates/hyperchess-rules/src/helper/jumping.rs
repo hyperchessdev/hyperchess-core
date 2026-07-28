@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/helper/jumping.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Eagle and Hawk attack tables — precomputed at first call, looked up thereafter.
 //!
 //! **Eagle** slides orthogonally, **Hawk** slides diagonally. Both are jumping

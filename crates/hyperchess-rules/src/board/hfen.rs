@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/hfen.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HyperChess HFEN parser and generator.
 //!
 //! HFEN format: `<position> <side> <castling> <ep> <halfmove> <fullmove>`

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/board/create.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { Board } from '../types/board';
 import { loadWasmBoard, snapshotFromWasmBoard } from '../wasm/engine';
 

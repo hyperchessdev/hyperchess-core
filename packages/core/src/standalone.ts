@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/standalone.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 /**
  * Bundler-free browser entry point — for a bare `<script type="module">`
  * import with no build step at all (no webpack/vite/esbuild/etc.).

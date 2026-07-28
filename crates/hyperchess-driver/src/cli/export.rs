@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/cli/export.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Save game results: HFEN, detailed TXT stats, and JSON game record.
 
 use hyperchess_rules::board::Board;
@@ -63,6 +69,10 @@ impl GameStats {
     // config struct would be a real API change, out of scope for this
     // copy-and-relocate phase. Same treatment as hyperchess-rules'
     // board/movegen/king.rs::can_castle in Phase 1.
+    /// Start recording a game. Per-side depth/simulations are kept separate
+    /// because White and Black may run different engines entirely; `depth` is
+    /// the max of the two purely so single-number report lines have something
+    /// to print.
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         white_engine: &str,
@@ -99,6 +109,11 @@ impl GameStats {
         }
     }
 
+    /// Append one ply and fold its cost into the running totals.
+    ///
+    /// Side attribution is by the record's `side` string and GPU attribution by
+    /// a `"GPU-"` backend prefix, so the aggregate counters stay correct even
+    /// when a game mixes backends mid-run (CPU fallback after a GPU failure).
     pub fn push_move(&mut self, rec: MoveRecord) {
         self.total_think_ms += rec.think_ms;
         if rec.side == "White" {
@@ -165,17 +180,43 @@ pub fn save_hpgni(stats: &GameStats, path: &str) {
     }
 }
 
+/// Per-side play-quality scores for a finished game (the "v3.1 spec" block in
+/// the exported stats). All components are in `[0, 1]`; only `v_target` is
+/// signed.
+///
+/// These are derived purely from the engine's own eval trace, so they measure
+/// self-consistency of play, not strength against an external reference.
 #[derive(Debug, Clone)]
 pub struct MasteryMetrics {
+    /// `1 - mean(win-probability lost per own move)`. Falls as blunders mount.
     pub soundness: f64,
+    /// Soundness plus a bonus per material sacrifice that did *not* cost win
+    /// probability — rewards deliberate sacrifices over accidental losses.
     pub brilliance: f64,
+    /// How quickly a won position was converted, once win probability first
+    /// crossed 0.85. Halved if the advantage was ever given back below 0.5.
     pub efficiency: f64,
+    /// How well the side held together while losing (win probability < 0.15).
+    /// Left at 1.0 when the side was never in a lost position.
     pub resilience: f64,
+    /// Aggregate of the four components, weighted by game outcome and
+    /// penalised toward the weakest active component.
     pub mastery: f64,
+    /// Game result mapped to a coarse band (loss/draw/win) and refined within
+    /// that band by `mastery`; stays in `[0, 1]`.
     pub refined_outcome: f64,
+    /// `refined_outcome` rescaled to `[-1, +1]` for use as a value-network
+    /// training target.
     pub v_target: f64,
 }
 
+/// Sum one side's material from a HFEN board field.
+///
+/// Parsed by hand rather than through `Board` because this runs once per ply
+/// over an already-recorded game. Handles both encodings the format allows:
+/// identity letters (where the letter itself carries the value) and plain
+/// piece chars, plus the inline `id:Type` pair a promoted pawn leaves behind —
+/// there the promoted type is what counts, not the pawn.
 fn get_material_value(hfen: &str, side: &str) -> i32 {
     fn type_value(piece: Piece) -> i32 {
         match piece {
@@ -233,6 +274,14 @@ fn get_material_value(hfen: &str, side: &str) -> i32 {
     val
 }
 
+/// Blend the four mastery components: half weighted mean, half worst active
+/// component.
+///
+/// The min term is what stops a single strong dimension from carrying a
+/// lopsided game — a player who is sound but never converts should not score
+/// like one who did both. Weights depend on `result_code` (1 = won, 2 = drew,
+/// anything else = lost) so a loss is judged mostly on resilience and a win
+/// mostly on soundness; zero-weight components are excluded from the min.
 fn weighted_penalized_min(sound: f64, brill: f64, eff: f64, resil: f64, result_code: i32) -> f64 {
     let w = match result_code {
         1 => [0.5, 0.2, 0.3, 0.0], // Winner
@@ -264,6 +313,15 @@ fn weighted_penalized_min(sound: f64, brill: f64, eff: f64, resil: f64, result_c
     0.5 * w_sum + 0.5 * p_min
 }
 
+/// Compute `(white, black)` mastery metrics for a finished game.
+///
+/// Centipawn evals are mapped to win probability through a logistic with slope
+/// 0.004/cp, and each side is scored on how much of its own win probability it
+/// gave away per move. The final ply compares against the actual result rather
+/// than a next-ply eval, so a decisive finish is credited as such.
+///
+/// An empty game yields perfect scores with a neutral 0.5 outcome, keeping
+/// callers free of a special case.
 pub fn compute_mastery(stats: &GameStats) -> (MasteryMetrics, MasteryMetrics) {
     let n = stats.moves.len();
     if n == 0 {
@@ -945,6 +1003,7 @@ pub fn save_json(board: &Board, stats: &GameStats, path: &str) {
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 
+/// Escape a string for embedding in the hand-built JSON emitted by `save_json`.
 fn esc(s: &str) -> String {
     s.replace('\\', "\\\\").replace('"', "\\\"")
 }

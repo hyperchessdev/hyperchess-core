@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/pieces.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Per-piece-type placeholder mesh composition. Each function builds one piece,
 //! centered at (0,0,0) on the XZ plane with its base sitting at y=0, out of the
 //! primitives in `geometry.rs`. Purely geometric — color/material comes from the
@@ -10,24 +16,35 @@
 use crate::geometry::{cone, cuboid, cylinder, frustum, torus, uv_sphere, Mesh};
 use glam::{Mat4, Quat, Vec3};
 
+/// Radial segment count for every revolved primitive. Low enough to keep the
+/// faceted look consistent across pieces, high enough that a base does not read
+/// as a polygon.
 const SEG: u32 = 14;
+/// Shared plinth radius — uniform across piece types so pieces line up on a
+/// square regardless of body width.
 const BASE_R: f32 = 0.30;
+/// Shared plinth height. Every body starts at this `y`, which is why the piece
+/// builders below all offset from `BASE_H` rather than 0.
 const BASE_H: f32 = 0.09;
 
+/// Shorthand for a translate/rotate/scale matrix, applied in SRT order.
 fn xf(t: Vec3, r: Quat, s: Vec3) -> Mat4 {
     Mat4::from_scale_rotation_translation(s, r, t)
 }
 
+/// The common plinth every piece sits on.
 fn base() -> Mesh {
     cylinder(Vec3::ZERO, BASE_R, BASE_H, SEG)
 }
 
+/// Pawn: tapered body with a spherical head.
 pub fn pawn() -> Mesh {
     let body = frustum(Vec3::new(0.0, BASE_H, 0.0), 0.20, 0.13, 0.26, SEG);
     let head = uv_sphere(Vec3::new(0.0, BASE_H + 0.26 + 0.11, 0.0), 0.14, 8, SEG);
     Mesh::merge([base(), body, head])
 }
 
+/// Rook: straight shaft under a battlement of four corner merlons.
 pub fn rook() -> Mesh {
     let shaft = cylinder(Vec3::new(0.0, BASE_H, 0.0), 0.23, 0.38, SEG);
     let collar = frustum(Vec3::new(0.0, BASE_H + 0.38, 0.0), 0.23, 0.29, 0.05, SEG);
@@ -43,6 +60,7 @@ pub fn rook() -> Mesh {
     Mesh::merge(std::iter::once(Mesh::merge([shaft, collar, top])).chain(merlons))
 }
 
+/// Knight: angled head and muzzle on a tapered neck, with a single swept ear.
 pub fn knight() -> Mesh {
     let neck = frustum(Vec3::new(0.0, BASE_H, 0.0), 0.19, 0.15, 0.32, SEG);
     let neck_top = BASE_H + 0.32;
@@ -64,6 +82,7 @@ pub fn knight() -> Mesh {
     Mesh::merge([base(), neck, head, muzzle, ear])
 }
 
+/// Bishop: tall narrow taper capped by a sphere and a finial.
 pub fn bishop() -> Mesh {
     let body = frustum(Vec3::new(0.0, BASE_H, 0.0), 0.21, 0.09, 0.46, SEG);
     let cap = uv_sphere(Vec3::new(0.0, BASE_H + 0.46 + 0.08, 0.0), 0.10, 8, SEG);
@@ -71,6 +90,8 @@ pub fn bishop() -> Mesh {
     Mesh::merge([base(), body, cap, finial])
 }
 
+/// `count` spheres evenly spaced on a horizontal circle — the crown points
+/// shared by the queen's coronet.
 fn crown_ring(y: f32, count: u32, radius: f32, sphere_r: f32) -> Vec<Mesh> {
     (0..count)
         .map(|i| {
@@ -85,6 +106,7 @@ fn crown_ring(y: f32, count: u32, radius: f32, sphere_r: f32) -> Vec<Mesh> {
         .collect()
 }
 
+/// Queen: wide taper, collar torus, six-point crown, and a central orb.
 pub fn queen() -> Mesh {
     let body = frustum(Vec3::new(0.0, BASE_H, 0.0), 0.25, 0.135, 0.54, SEG);
     let top_y = BASE_H + 0.54;
@@ -94,6 +116,8 @@ pub fn queen() -> Mesh {
     Mesh::merge(std::iter::once(Mesh::merge([base(), body, collar, orb])).chain(points))
 }
 
+/// King: like the queen but taller, topped with an orb and cross instead of a
+/// crown ring.
 pub fn king() -> Mesh {
     let body = frustum(Vec3::new(0.0, BASE_H, 0.0), 0.25, 0.145, 0.60, SEG);
     let top_y = BASE_H + 0.60;
@@ -153,6 +177,10 @@ pub fn hawk() -> Mesh {
     Mesh::merge([base(), body, head, beak, fin])
 }
 
+/// Build the mesh for a piece by lowercase name, or `None` for an unknown one.
+///
+/// Accepts exactly the strings in [`PIECE_NAMES`]; the asset generator iterates
+/// that array and feeds each entry here, so the two must stay in agreement.
 pub fn mesh_for(name: &str) -> Option<Mesh> {
     Some(match name {
         "pawn" => pawn(),
@@ -167,6 +195,12 @@ pub fn mesh_for(name: &str) -> Option<Mesh> {
     })
 }
 
+/// Every piece type this module can build, in the crate's canonical order.
+///
+/// The order is load-bearing, not cosmetic: it is the `kind` numbering of the
+/// 144-byte board encoding documented on `Scene3D`, offset by one (kind 1 is
+/// index 0). Reordering this array silently remaps every piece the renderer
+/// draws.
 pub const PIECE_NAMES: [&str; 8] = [
     "pawn", "knight", "bishop", "rook", "queen", "king", "eagle", "hawk",
 ];

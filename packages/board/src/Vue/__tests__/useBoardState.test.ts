@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/board
+// File: packages/board/src/Vue/__tests__/useBoardState.test.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { describe, it, expect } from 'vitest';
 import { createBoard } from '@hyperchess/core';
 import { useBoardState } from '../useBoardState';

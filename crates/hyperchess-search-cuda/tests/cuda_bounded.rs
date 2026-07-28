@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search-cuda
+// File: crates/hyperchess-search-cuda/tests/cuda_bounded.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! CUDA search budget/contract tests (compiled only with `--features cuda`).
 //!
 //! These verify the bounded GPU entry points honour wall-clock budgets and

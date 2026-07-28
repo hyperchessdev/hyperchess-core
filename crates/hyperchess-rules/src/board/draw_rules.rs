@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/draw_rules.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Game-termination and draw rules: checkmate/stalemate, the move rule,
 //! repetition and insufficient material — plus material adjudication for
 //! move-limit endings.

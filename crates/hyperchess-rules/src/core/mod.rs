@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/mod.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Core types for HyperChess: Player, PieceType, Piece, File, Rank, GenTypes.
 //!
 //! The individual types live in focused submodules and are re-exported here so

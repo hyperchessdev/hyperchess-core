@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-eval
+// File: crates/hyperchess-eval/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Single source of truth for HyperChess static-evaluation math.
 //!
 //! This crate is `#![no_std]` and uses only `core` integer arithmetic, so the

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/iterative.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! `IterativeSearcher` — backwards-compatible name for the canonical search.
 //!
 //! The canonical [`TimedSearcher`] *is* an iterative-deepening alpha-beta with a
@@ -10,11 +16,17 @@ use hyperchess_rules::board::Board;
 use hyperchess_rules::core::piece_move::HyperMove;
 use hyperchess_rules::tools::Searcher;
 
+/// Iterative-deepening search to a fixed maximum depth.
+///
+/// Shares the [`TimedSearcher`] core with [`crate::AlphaBetaSearcher`]; the
+/// canonical search already deepens iteratively, so this exists as a distinct
+/// name for CLI/UCI algorithm selection rather than as a different algorithm.
 pub struct IterativeSearcher {
     inner: TimedSearcher,
 }
 
 impl IterativeSearcher {
+    /// A searcher with an empty transposition table.
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::new(),

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/pro.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! `AggressiveSearcher` — the "commercial-grade" search option.
 //!
 //! The canonical [`TimedSearcher`] running the [`SearchProfile::Aggressive`] profile:
@@ -28,6 +34,7 @@ pub struct AggressiveSearcher {
 }
 
 impl AggressiveSearcher {
+    /// An aggressive-profile searcher with an empty transposition table.
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::pro(),

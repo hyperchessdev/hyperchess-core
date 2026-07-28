@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess_kernels
+// File: crates/hyperchess-search-cuda/kernels/src/eval.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! GPU batch position evaluation kernel.
 //!
 //! The evaluation MATH (material, PSQT, phase, blend) lives in the shared

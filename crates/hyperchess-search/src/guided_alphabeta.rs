@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/guided_alphabeta.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! `GuidedAlphaBeta` / `GuidedIterative` — backwards-compatible names for the
 //! canonical search.
 //!
@@ -19,6 +25,7 @@ pub struct GuidedAlphaBeta {
 }
 
 impl GuidedAlphaBeta {
+    /// A searcher with an empty transposition table.
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::new(),
@@ -47,6 +54,7 @@ pub struct GuidedIterative {
 }
 
 impl GuidedIterative {
+    /// A searcher with an empty transposition table.
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::new(),
@@ -69,11 +77,16 @@ impl Searcher for GuidedIterative {
     }
 }
 
+/// Search on the [`SearchProfile::Strategic`] profile: later late-move
+/// reductions and guided root ordering, trading nodes for positional accuracy.
+///
+/// [`SearchProfile::Strategic`]: crate::SearchProfile::Strategic
 pub struct StrategicSearcher {
     inner: TimedSearcher,
 }
 
 impl StrategicSearcher {
+    /// A strategic-profile searcher with an empty transposition table.
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::strategic(),

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/tests/rules_integration.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Rules-correctness tests exercised *through* a searcher — necessarily live
 //! here (not in hyperchess-rules, which must not depend on search).
 //! Carried over verbatim from kyrpy-hyperchess-rust's

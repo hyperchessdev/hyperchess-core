@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/main.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! `hyperchess` — the HyperChess driver binary.
 //!
 //! Subcommands: `play` / `perft` / `show` / `gpu-info` / `bench-eval` (CLI,

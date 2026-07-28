@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/tools/tt.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Transposition table.
 
 use crate::core::piece_move::HyperMove;
@@ -14,14 +20,28 @@ pub enum TTFlag {
 /// A single transposition table entry.
 #[derive(Copy, Clone)]
 pub struct TTEntry {
+    /// Full Zobrist hash of the position. Stored in full even though the index
+    /// only uses the low bits, so a slot collision can be detected rather than
+    /// silently returning another position's score.
     pub key: u64,
+    /// Best move found at this node, used for move ordering even when the
+    /// stored score itself is unusable at the current depth.
     pub best_move: HyperMove,
+    /// Score, interpreted according to `flag`.
     pub score: Value,
+    /// Remaining depth this entry was searched to; a probe may only trust the
+    /// score if its own remaining depth is no greater.
     pub depth: i32,
+    /// Whether `score` is exact or only a bound.
     pub flag: TTFlag,
 }
 
 impl TTEntry {
+    /// A slot that no probe can match.
+    ///
+    /// `depth: -1` is what makes it unusable: every real search stores a
+    /// non-negative depth, so the depth check rejects an empty slot before the
+    /// key is ever trusted.
     pub fn empty() -> Self {
         TTEntry {
             key: 0,

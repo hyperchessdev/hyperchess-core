@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/wasm/engine.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { WasmBoard } from '@hyperchess/wasm';
 
 export { snapshotFromWasmBoard, moveToUci, uciToMove } from './snapshot';

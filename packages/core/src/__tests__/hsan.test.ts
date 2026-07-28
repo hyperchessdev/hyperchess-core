@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/__tests__/hsan.test.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { describe, it, expect } from 'vitest';
 import { Board } from '../types/board';
 import { parseHsanMove } from '../io/hsan-parser';

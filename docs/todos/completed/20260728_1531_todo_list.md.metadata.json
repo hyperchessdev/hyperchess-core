@@ -1,0 +1,8 @@
+{
+  "task_id": "20260728_1531",
+  "prompt": "rethink and improve the documents under hyperchess-core, remove the existing repository and recreate it with final version, need more comprehensive documentation for the project, explainable codebase (at variable, class base) as production grade. use HyperChess Developer Team, versioning for each file. add thanks to existing algorithms etc. (follow-up to an earlier prompt asking for README overhaul inspired by the bare-metal strategy playbook and project story, honesty/trust section on Stockfish/Fairy-Stockfish/Lichess derivation, AI-orchestration cost disclosure, CLI/UCI/format/laws documentation)",
+  "status": "in-progress",
+  "created_at": "2026-07-28T12:31:05Z",
+  "updated_at": "2026-07-28T13:52:00Z",
+  "note": "Plan pivoted mid-session: repo deletion/recreation replaced with reconciling onto an already-merged PR #1 foundation and opening a normal PR. See dev-report 20260728-164036 for details."
+}

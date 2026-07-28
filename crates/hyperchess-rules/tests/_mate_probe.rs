@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/tests/_mate_probe.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 use hyperchess_rules::board::Board;
 #[test]
 fn find_terminal_fens() {

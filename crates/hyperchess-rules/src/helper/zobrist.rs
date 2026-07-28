@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/helper/zobrist.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Zobrist hashing for HyperChess (144 squares, 10 piece types, 2 players).
 
 use crate::core::masks::*;
@@ -25,9 +31,15 @@ pub struct ZobristKeys {
 /// Lazily-initialized global key set. `std::sync::LazyLock` (not an external
 /// macro crate) — dereferences exactly like the old `lazy_static` binding, so
 /// call sites read `ZOBRIST.side`, `ZOBRIST.castle(..)`, etc. unchanged.
+///
+/// Keys come from a fixed PRNG seed rather than entropy, so hashes are
+/// reproducible across runs — a persisted transposition table or a logged hash
+/// from one run stays meaningful in the next.
 pub static ZOBRIST: std::sync::LazyLock<ZobristKeys> = std::sync::LazyLock::new(ZobristKeys::init);
 
 impl ZobristKeys {
+    /// Fill every key from the seeded PRNG. See [`ZOBRIST`] for why the seed is
+    /// fixed rather than drawn from entropy.
     fn init() -> Self {
         let mut prng = PRNG::init(1070372);
 

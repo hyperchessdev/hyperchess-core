@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/api/mod.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Stateless REST/OpenAPI API driver — see
 //! docs/hyperchess-core-extraction-plan.md §6 for the design.
 //!
@@ -37,8 +43,10 @@ use utoipa_swagger_ui::SwaggerUi;
         description = "Stateless REST API for HyperChess — legal move generation, FEN validation, and engine best-move queries. No account, no persistence: every request is self-contained.",
     )
 )]
+/// Marker type carrying the derived OpenAPI 3 document for this service.
 struct ApiDoc;
 
+/// Search depth used when a request omits `depth`, from `ENGINE_DEFAULT_DEPTH`.
 fn default_depth() -> u32 {
     std::env::var("ENGINE_DEFAULT_DEPTH")
         .ok()
@@ -46,6 +54,11 @@ fn default_depth() -> u32 {
         .unwrap_or(4)
 }
 
+/// Applies `ENGINE_THREADS` to Rayon's global pool, if set.
+///
+/// Must run before the first parallel search: `build_global` can only succeed
+/// once per process, and the failure is swallowed precisely because a pool
+/// already installed by an earlier call is the acceptable outcome.
 fn configure_threads() {
     if let Some(n) = std::env::var("ENGINE_THREADS")
         .ok()
@@ -58,6 +71,10 @@ fn configure_threads() {
     }
 }
 
+/// Builds the full route table, including the Swagger UI mount at `/docs`.
+///
+/// Split out from [`run`] so tests can exercise the routes without binding a
+/// socket.
 pub fn router() -> Router {
     // SwaggerUi::new(...).url(...) registers /openapi.json itself — a second
     // manual .route() for the same path panics at router-build time with

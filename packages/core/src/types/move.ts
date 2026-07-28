@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/types/move.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 /** Color/side in the game */
 export type Color = 'white' | 'black';
 

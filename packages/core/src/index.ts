@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/index.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 // Types
 export { type Board, type CastlingRights, type BoardState, type HfenString } from './types/board';
 export { type Color, type Square, type Move, type AlgebraicMove, type HsanMove, type PromotionPiece } from './types/move';

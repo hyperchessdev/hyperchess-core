@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/obj.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Minimal Wavefront OBJ parser: just enough to load the placeholder piece meshes
 //! (and, later, real artist-modeled replacements dropped into `src/assets/pieces/`
 //! with the same filenames). Supports `v`, `vn`, and triangulated/fan-triangulated
@@ -8,6 +14,14 @@
 use crate::geometry::Mesh;
 use glam::Vec3;
 
+/// Parse OBJ text into a flat, faceted [`Mesh`].
+///
+/// Deliberately total: malformed lines and unsupported directives (`vt`, `usemtl`,
+/// groups) are skipped rather than reported, because a partially-drawn piece is a
+/// better browser failure mode than a hard error on an artist's export.
+///
+/// Output is un-indexed in effect — each triangle contributes three fresh
+/// vertices — matching how [`Mesh`] stores geometry everywhere else in this crate.
 pub fn parse(src: &str) -> Mesh {
     let mut positions: Vec<Vec3> = Vec::new();
     let mut normals: Vec<Vec3> = Vec::new();

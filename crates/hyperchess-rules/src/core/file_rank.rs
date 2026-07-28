@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/file_rank.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! The `File` and `Rank` coordinate enums for the 12×12 board.
 
 use super::masks::*;
@@ -36,6 +42,11 @@ pub static ALL_RANKS: [Rank; RANK_CNT] = [
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Ord, PartialOrd, Hash)]
+/// A board column, `A`..=`L`. HyperChess is 12 wide, so files run two past
+/// standard chess's `H`.
+///
+/// Discriminants are the 0-based column index, which is what lets file/rank
+/// pairs convert to a square as `rank * 12 + file` without a lookup.
 pub enum File {
     A = 0,
     B = 1,
@@ -52,12 +63,19 @@ pub enum File {
 }
 
 impl File {
+    /// Column index (0-11) to `File`.
+    ///
+    /// Debug-asserts the range and would panic on the array index in release —
+    /// callers derive `idx` from a square, so an out-of-range value means the
+    /// square itself was already corrupt.
     #[inline]
     pub fn from_index(idx: u8) -> File {
         debug_assert!(idx < 12);
         ALL_FILES[idx as usize]
     }
 
+    /// Absolute column separation, computed without signed arithmetic since
+    /// the discriminants are `u8`.
     pub fn distance(self, other: File) -> u8 {
         if self > other {
             self as u8 - other as u8
@@ -66,6 +84,7 @@ impl File {
         }
     }
 
+    /// Display letter for this file (`'a'`..=`'l'`), as used by HFEN and UCI.
     pub fn char(self) -> char {
         FILE_DISPLAYS[self as usize]
     }
@@ -73,6 +92,10 @@ impl File {
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Ord, PartialOrd, Hash)]
+/// A board row, `R1`..=`R12`, with discriminants as the 0-based row index.
+///
+/// `R1` is White's back rank and `R12` is Black's; the enum is ordered from
+/// White's side, so `Ord` on `Rank` means "further from White".
 pub enum Rank {
     R1 = 0,
     R2 = 1,
@@ -89,12 +112,14 @@ pub enum Rank {
 }
 
 impl Rank {
+    /// Row index (0-11) to `Rank`. Same range contract as [`File::from_index`].
     #[inline]
     pub fn from_index(idx: u8) -> Rank {
         debug_assert!(idx < 12, "Rank::from_index called with {}", idx);
         ALL_RANKS[idx as usize]
     }
 
+    /// Absolute row separation.
     pub fn distance(self, other: Rank) -> u8 {
         if self > other {
             self as u8 - other as u8

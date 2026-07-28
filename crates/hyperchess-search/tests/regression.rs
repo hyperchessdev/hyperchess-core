@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/tests/regression.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Phase-0 regression safety net (see refactor blueprint).
 //!
 //! These golden values lock the engine's observable behavior *before* the large

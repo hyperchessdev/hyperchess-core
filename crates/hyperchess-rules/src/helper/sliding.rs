@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/helper/sliding.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Classical ray-based sliding attack generation for Rook, Bishop, and Queen.
 //!
 //! Since we use a 3×u64 bitboard, magic bitboards are not feasible.
@@ -73,10 +79,13 @@ pub fn rook_pseudo_attacks(sq: SQ) -> BitBoard {
     rook_attacks(sq, BitBoard::EMPTY)
 }
 
+/// Diagonal pseudo-attacks from `sq` on an empty board.
 pub fn bishop_pseudo_attacks(sq: SQ) -> BitBoard {
     bishop_attacks(sq, BitBoard::EMPTY)
 }
 
+/// Combined orthogonal and diagonal pseudo-attacks from `sq` on an empty
+/// board — the union of the rook and bishop rays.
 pub fn queen_pseudo_attacks(sq: SQ) -> BitBoard {
     queen_attacks(sq, BitBoard::EMPTY)
 }

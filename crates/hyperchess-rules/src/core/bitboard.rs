@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/bitboard.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! BitBoard type for the 12x12 HyperChess board.
 //!
 //! A `BitBoard` is represented as `[u64; 3]` (192 bits), with 144 bits used.
