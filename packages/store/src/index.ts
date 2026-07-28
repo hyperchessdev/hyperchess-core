@@ -1,3 +1,22 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/store
+// File: packages/store/src/index.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
+/**
+ * Persistence layer for HyperChess games.
+ *
+ * Every adapter implements the same {@link GameStore} contract over a different
+ * backend, so an application can swap storage without touching game logic. The
+ * database-backed adapters (`postgres`, `sqlite`, `firebase`, `supabase`) load
+ * their driver lazily via `require()` and throw from their constructor if the
+ * driver is absent — this keeps all four out of the dependency graph of a
+ * consumer that only uses one of them.
+ *
+ * @packageDocumentation
+ */
+
 // Export types
 export type { GameStore } from './types/game-store';
 export { isStoreOnline, syncStores } from './types/game-store';

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search-cuda
+// File: crates/hyperchess-search-cuda/src/cuda_mcts.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! GPU-accelerated MCTS for HyperChess.
 //!
 //! Strategy: **batched leaf evaluation**.

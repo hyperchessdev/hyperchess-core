@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/geometry.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Procedural low-poly primitive mesh generation, used to build the placeholder
 //! piece models under `src/assets/pieces/*.obj` (see `bin/gen_assets.rs`).
 //!
@@ -9,15 +15,28 @@
 
 use glam::{Mat4, Vec3};
 
+/// A faceted triangle mesh in the crate's own minimal form.
+///
+/// `positions` and `normals` are index-parallel: entry *i* of one always
+/// belongs to entry *i* of the other. Because meshes here are faceted, a vertex
+/// shared geometrically between two faces still appears twice, once per face,
+/// each copy carrying its own face normal.
 #[derive(Clone, Debug, Default)]
 pub struct Mesh {
+    /// One entry per vertex, in object space.
     pub positions: Vec<[f32; 3]>,
+    /// Face normal, duplicated per vertex — see the note on [`Mesh`].
     pub normals: Vec<[f32; 3]>,
     /// Triangle list, 3 indices per face, indexing into `positions`/`normals` in lockstep.
     pub indices: Vec<u32>,
 }
 
 impl Mesh {
+    /// Append one triangle with a normal derived from its own winding.
+    ///
+    /// `normalize_or_zero` rather than `normalize` so a degenerate (zero-area)
+    /// triangle yields a zero normal instead of NaNs propagating into the
+    /// exported OBJ.
     fn push_tri(&mut self, a: Vec3, b: Vec3, c: Vec3) {
         let n = (b - a).cross(c - a).normalize_or_zero();
         let base = self.positions.len() as u32;
@@ -28,12 +47,19 @@ impl Mesh {
         self.indices.extend([base, base + 1, base + 2]);
     }
 
+    /// Append a planar quad as two triangles sharing the `a`–`c` diagonal.
     fn push_quad(&mut self, a: Vec3, b: Vec3, c: Vec3, d: Vec3) {
         // a,b,c,d in winding order around the quad.
         self.push_tri(a, b, c);
         self.push_tri(a, c, d);
     }
 
+    /// Return a copy with `m` applied to positions.
+    ///
+    /// Normals go through the inverse-transpose instead of `m` itself, which is
+    /// what keeps them perpendicular to the surface under non-uniform scaling —
+    /// applying `m` directly would visibly skew the shading on any squashed
+    /// piece part.
     pub fn transformed(&self, m: Mat4) -> Mesh {
         let normal_mat = m.inverse().transpose();
         Mesh {
@@ -56,6 +82,8 @@ impl Mesh {
         }
     }
 
+    /// Concatenate meshes into one, rebasing each part's indices onto the
+    /// growing vertex buffer. This is how a piece is assembled from primitives.
     pub fn merge(parts: impl IntoIterator<Item = Mesh>) -> Mesh {
         let mut out = Mesh::default();
         for part in parts {
@@ -67,6 +95,7 @@ impl Mesh {
         out
     }
 
+    /// Serialise to Wavefront OBJ text (`v`/`vn`/`f` only, no material data).
     pub fn to_obj(&self) -> String {
         let mut s = String::new();
         s.push_str(
@@ -172,10 +201,13 @@ pub fn frustum(
     m
 }
 
+/// Closed cylinder — a [`frustum`] with equal radii.
 pub fn cylinder(center: Vec3, radius: f32, height: f32, segments: u32) -> Mesh {
     frustum(center, radius, radius, height, segments)
 }
 
+/// Closed cone — a [`frustum`] whose top radius is zero, so the top cap is
+/// skipped and the sides converge to the apex.
 pub fn cone(center: Vec3, radius: f32, height: f32, segments: u32) -> Mesh {
     frustum(center, radius, 0.0, height, segments)
 }

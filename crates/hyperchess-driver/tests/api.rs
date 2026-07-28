@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/tests/api.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Integration tests for the API driver — exercises the real axum `Router`
 //! in-process (no live TCP listener needed) via `tower::ServiceExt::oneshot`,
 //! the standard axum testing pattern. Complements (doesn't replace) the

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/helper/psqt.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Piece-square tables for 12x12 HyperChess.
 //!
 //! Values are from White's perspective. For Black, mirror the rank.

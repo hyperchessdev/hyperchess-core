@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/piece_move.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HyperMove — a 32-bit encoded move for the 12x12 board.
 //!
 //! Bit layout:
@@ -21,9 +27,14 @@ use super::*;
 use std::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use std::fmt;
 
+/// Bits 0-7 — source square. 8 bits is exactly enough for 0..=143.
 const SRC_MASK: u32 = 0x0000_00FF;
+/// Bits 8-15 — destination square.
 const DST_MASK: u32 = 0x0000_FF00;
+/// Bits 16-19 — move flag, one of the `FLAG_*` constants.
 const FLAG_MASK: u32 = 0x000F_0000;
+/// Bits 20-23 — promotion piece type; meaningful only when the promotion bit
+/// of the flag nibble is set.
 const PROMO_MASK: u32 = 0x00F0_0000;
 
 /// A 32-bit encoded move for HyperChess.
@@ -35,13 +46,24 @@ pub struct HyperMove {
 
 /// Move flag constants.
 impl HyperMove {
+    /// Non-capturing, non-special move.
     pub const FLAG_QUIET: u32 = 0x0;
+    /// Pawn advancing two squares; sets an en-passant target.
     pub const FLAG_DOUBLE_PAWN: u32 = 0x1;
+    /// King-side castle. Source/destination are the *king's* squares.
     pub const FLAG_KING_CASTLE: u32 = 0x2;
+    /// Queen-side castle. Source/destination are the *king's* squares.
     pub const FLAG_QUEEN_CASTLE: u32 = 0x3;
+    /// Ordinary capture. Bit 0x4 is the capture bit — every capturing flag has
+    /// it set, so `flag & FLAG_CAPTURE != 0` tests capture-ness in one step.
     pub const FLAG_CAPTURE: u32 = 0x4;
+    /// En-passant capture; the captured pawn is not on the destination square.
     pub const FLAG_EP: u32 = 0x5;
+    /// Promotion without capture. Bit 0x8 is the promotion bit, orthogonal to
+    /// the capture bit above.
     pub const FLAG_PROMO: u32 = 0x8;
+    /// Promotion with capture — promotion and capture bits together, which is
+    /// why this value is `0x8 | 0x4` rather than the next number in sequence.
     pub const FLAG_PROMO_CAPTURE: u32 = 0xC;
 
     /// Creates a move from raw bits.
@@ -273,6 +295,7 @@ impl Default for ScoringMove {
 }
 
 impl ScoringMove {
+    /// Wrap a move with a zero score, for a list that will be scored later.
     #[inline(always)]
     pub fn new(m: HyperMove) -> Self {
         ScoringMove {
@@ -281,6 +304,7 @@ impl ScoringMove {
         }
     }
 
+    /// Wrap a move together with an already-known score.
     #[inline(always)]
     pub fn new_score(m: HyperMove, score: i32) -> Self {
         ScoringMove {
@@ -289,11 +313,17 @@ impl ScoringMove {
         }
     }
 
+    /// A null move with score 0 — the fill value for unused list slots.
     #[inline(always)]
     pub fn null() -> Self {
         ScoringMove::default()
     }
 
+    /// Flip the score's sign for the negamax convention, leaving the move
+    /// itself untouched.
+    ///
+    /// Uses `wrapping_neg` so that `i32::MIN` — which a search may use as its
+    /// initial alpha — negates instead of overflow-panicking in debug builds.
     #[inline(always)]
     pub fn negate(mut self) -> Self {
         self.score = self.score.wrapping_neg();

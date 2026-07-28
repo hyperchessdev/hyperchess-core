@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/tools/eval.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Evaluation function for HyperChess.
 //!
 //! Two layers:
@@ -64,6 +70,10 @@ pub mod value_overrides {
         }
     }
 
+    /// Middlegame value of `pt`, honouring any override set by [`set`].
+    ///
+    /// Falls back to the compiled-in table when no override is present, which
+    /// is why `NONE` must stay outside the range of any plausible piece value.
     #[inline]
     pub(crate) fn mg(pt: PieceType) -> Value {
         let v = MG[pt as usize].load(Ordering::Relaxed);
@@ -74,6 +84,7 @@ pub mod value_overrides {
         }
     }
 
+    /// Endgame counterpart of [`mg`].
     #[inline]
     pub(crate) fn eg(pt: PieceType) -> Value {
         let v = EG[pt as usize].load(Ordering::Relaxed);

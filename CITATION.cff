@@ -3,7 +3,7 @@ message: "If you use HyperChess Core in your research, please cite it as below."
 title: "HyperChess Core"
 type: software
 authors:
-  - name: "HyperChess Contributors"
+  - name: "HyperChess Developer Team"
 repository-code: "https://github.com/hyperchessdev/hyperchess-core"
 url: "https://github.com/hyperchessdev/hyperchess-core"
 license: GPL-3.0-or-later

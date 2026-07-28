@@ -1,5 +1,15 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/store
+// File: packages/store/src/types/game-record.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 /**
- * A complete game record (HPGN + metadata)
+ * A complete game record (HPGN + metadata).
+ *
+ * This is the single wire/storage shape shared by every adapter. Adapters that
+ * persist to a relational backend flatten `players`/`metadata` into JSON columns
+ * and rename `userId` to `user_id`; consumers always see this camelCase form.
  */
 export interface GameRecord {
   /** Unique game identifier */
@@ -45,7 +55,11 @@ export interface GameRecord {
 }
 
 /**
- * Query options for listing games
+ * Query options for listing games.
+ *
+ * Filters are combined with AND. All fields are optional; an empty object means
+ * "every game, newest first" for the backend-query adapters and "every game,
+ * oldest first" for {@link GameRecord} sorting done in memory.
  */
 export interface GameQueryOptions {
   /** Filter by user ID */
@@ -65,12 +79,19 @@ export interface GameQueryOptions {
 }
 
 /**
- * Unsubscribe function returned by watch()
+ * Teardown handle returned by `GameStore.watch()`. Calling it detaches the
+ * callback and, once the last callback for an id is gone, releases whatever
+ * backend resource backed the subscription (poll timer, channel, snapshot).
  */
 export type Unsubscribe = () => void;
 
 /**
- * Error types
+ * Thrown when a game id does not resolve to a stored record.
+ *
+ * Raised by `loadGame()` and `deleteGame()` on every adapter, so callers can
+ * distinguish "absent" from a genuine backend failure.
+ *
+ * @param id - The game id that could not be resolved; embedded in the message.
  */
 export class GameNotFoundError extends Error {
   constructor(id: string) {
@@ -79,6 +100,12 @@ export class GameNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown when a {@link GameRecord} fails structural validation before it is
+ * handed to a backend.
+ *
+ * @param message - Description of which field or invariant was violated.
+ */
 export class ValidationError extends Error {
   constructor(message: string) {
     super(message);
@@ -86,6 +113,12 @@ export class ValidationError extends Error {
   }
 }
 
+/**
+ * Thrown when replication between two stores cannot complete — for example an
+ * offline SQLite store failing to flush its sync queue upstream.
+ *
+ * @param message - Description of what failed to sync and why.
+ */
 export class SyncError extends Error {
   constructor(message: string) {
     super(message);

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/castle_rights.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Castling rights for HyperChess (12x12 board).
 
 use crate::core::masks::*;
@@ -13,14 +19,22 @@ use crate::core::Player;
 pub struct CastleRights(pub u8);
 
 impl CastleRights {
+    /// No side may castle either way.
     pub const NONE: CastleRights = CastleRights(0);
+    /// Both sides may castle both ways — the starting position's rights.
     pub const ALL: CastleRights = CastleRights(0b1111);
 
+    /// White king-side only.
     pub const WHITE_KING: CastleRights = CastleRights(C_WHITE_K_MASK);
+    /// White queen-side only.
     pub const WHITE_QUEEN: CastleRights = CastleRights(C_WHITE_Q_MASK);
+    /// Black king-side only.
     pub const BLACK_KING: CastleRights = CastleRights(C_BLACK_K_MASK);
+    /// Black queen-side only.
     pub const BLACK_QUEEN: CastleRights = CastleRights(C_BLACK_Q_MASK);
+    /// Both of White's rights — the mask to clear when White's king moves.
     pub const WHITE_BOTH: CastleRights = CastleRights(C_WHITE_K_MASK | C_WHITE_Q_MASK);
+    /// Both of Black's rights — the mask to clear when Black's king moves.
     pub const BLACK_BOTH: CastleRights = CastleRights(C_BLACK_K_MASK | C_BLACK_Q_MASK);
 
     /// Can the given player castle king-side?

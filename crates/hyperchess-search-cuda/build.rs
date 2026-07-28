@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search-cuda
+// File: crates/hyperchess-search-cuda/build.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 use std::{env, path};
 
 fn main() {

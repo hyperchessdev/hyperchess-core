@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/cli/render.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Board PNG rendering using the hyperchess.ttf custom font.
 
 use hyperchess_rules::board::Board;

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/piece_identity.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Identity-HFEN piece characters.
 //!
 //! HFEN-I assigns a stable character to every original starting piece. The

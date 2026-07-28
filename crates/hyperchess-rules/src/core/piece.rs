@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/piece.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! The `Piece` enum (player + piece type combined) and its HFEN mapping.
 
 use std::fmt;
@@ -10,7 +16,13 @@ pub const PIECE_ENUM_CNT: usize = 17;
 
 #[repr(u8)]
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
+/// A piece together with its owner, as stored in the board's square array.
+///
+/// Discriminants are laid out so White's pieces occupy 1-8 and Black's repeat
+/// the same order at 9-16. That regularity is what lets [`Piece::make_lossy`]
+/// index a flat table by `player * 8 + piece_type` instead of branching.
 pub enum Piece {
+    /// Empty square.
     None = 0,
     WhitePawn = 1,
     WhiteKnight = 2,

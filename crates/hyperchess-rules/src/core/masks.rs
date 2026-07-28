@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/masks.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Masks and constants for the 12x12 HyperChess board.
 
 /// Total number of players.
@@ -63,8 +69,12 @@ pub const ROOK_BLACK_QSIDE_START: u8 = 122;
 
 /// Castling right bits.
 pub const C_WHITE_K_MASK: u8 = 0b0000_1000;
+/// White queen-side castling right.
 pub const C_WHITE_Q_MASK: u8 = 0b0000_0100;
+/// Black king-side castling right.
 pub const C_BLACK_K_MASK: u8 = 0b0000_0010;
+/// Black queen-side castling right. The bit order (White high, king-side above
+/// queen-side) is what HFEN's `KQkq` field serialises, most significant first.
 pub const C_BLACK_Q_MASK: u8 = 0b0000_0001;
 
 /// Starting rook positions: [player][side] where side 0=king, 1=queen.
@@ -78,23 +88,32 @@ pub static KING_START: [u8; PLAYER_CNT] = [WHITE_KING_START, BLACK_KING_START];
 
 // King-side castle: King g2→i2, Rook j2→h2
 // Queen-side castle: King g2→e2, Rook c2→f2
-// King destination squares for castling [player][side]
+/// King destination squares for castling, `[player][side]` with side 0 =
+/// king-side, 1 = queen-side.
+///
+/// On a 12-wide board the king starts on the g-file, so castling moves it two
+/// files as in standard chess but between different named squares.
 pub static CASTLING_KING_DST: [[u8; CASTLING_SIDES]; PLAYER_CNT] = [
     [20, 16],   // White: i2=20, e2=16
     [128, 124], // Black: i11=128, e11=124
 ];
 
-// Rook destination squares for castling [player][side]
+/// Rook destination squares for castling, indexed as [`CASTLING_KING_DST`].
 pub static CASTLING_ROOK_DST: [[u8; CASTLING_SIDES]; PLAYER_CNT] = [
     [19, 17],   // White: h2=19, f2=17
     [127, 125], // Black: h11=127, f11=125
 ];
 
-// === File characters ===
+/// File letters, indexed by 0-based column.
 pub static FILE_DISPLAYS: [char; FILE_CNT] =
     ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l'];
 
-// === Rank characters ===
+/// Rank characters, indexed by 0-based row.
+///
+/// Ranks 10-12 are single letters `T`/`E`/`W` rather than the digits `10`-`12`
+/// so that every square name is exactly two characters. That fixed width is
+/// what keeps HFEN and UCI square parsing unambiguous — `a11` would otherwise
+/// be readable as either a1 followed by 1, or a-file rank 11.
 pub static RANK_DISPLAYS: [char; RANK_CNT] =
     ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'T', 'E', 'W'];
 

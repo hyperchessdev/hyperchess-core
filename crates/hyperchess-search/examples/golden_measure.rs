@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/examples/golden_measure.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! One-off measurement harness to capture golden regression values.
 //! Run: cargo run -p hyperchess-search --release --example golden_measure
 //! The printed values are baked into tests/regression.rs as assertions.

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/uci/mod.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! UCI (Universal Chess Interface) integration.
 //!
 //! - [`server`] + [`server_util`] — the native HyperChess UCI server (the

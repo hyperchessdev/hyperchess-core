@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/io/hsan_parse.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HSAN parser and HSAN-to-HyperMove converter.
 
 use crate::board::Board;
@@ -27,9 +33,13 @@ pub struct HsanMove {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// The trailing annotation on a HSAN move.
 pub enum CheckMarker {
+    /// No marker.
     None,
+    /// Trailing `+`.
     Check,
+    /// Trailing `#`.
     Checkmate,
 }
 

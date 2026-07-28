@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/helper/boards.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Precomputed attack tables for non-sliding pieces: Knight, King, Pawn attacks.
 //! Also Distance, Line, and Between tables.
 

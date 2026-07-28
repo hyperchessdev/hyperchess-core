@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/utils/square-notation.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 /** A file letter (a-l) followed by a rank of 1-12 (10-12 are two digits). */
 export const SQUARE_TOKEN = '[a-l](?:1[0-2]|[1-9])';
 

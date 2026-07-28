@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/timed.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Anytime iterative-deepening search with a real budget.
 //!
 //! This is the engine the interactive paths (WASM + server) should use. Unlike
@@ -39,6 +45,8 @@ pub(crate) mod clock {
         js_sys::Date::now()
     }
 
+    /// Native millisecond clock. Absolute epoch offset is irrelevant — only
+    /// differences are used, to build a move deadline.
     #[cfg(not(all(feature = "wasm", target_arch = "wasm32")))]
     #[inline]
     pub fn now_ms() -> f64 {
@@ -74,8 +82,18 @@ const LMR_MIN_MOVE: u32 = 3;
 const NULL_MOVE_MIN_DEPTH: i32 = 3;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Which bundle of search techniques a [`TimedSearcher`] runs with.
+///
+/// The profile is a single knob over TT size, late-move-reduction threshold,
+/// root-ordering strategy, and whether speculative pruning is on — chosen
+/// together because the settings interact (aggressive pruning wants a bigger TT
+/// to recover the nodes it mispredicts).
 pub enum SearchProfile {
+    /// Default: full search with no speculative pruning.
     Balanced,
+    /// Positional bias — reduces late moves one move later than
+    /// [`SearchProfile::Balanced`] and uses guided root ordering from depth 3,
+    /// trading nodes for better root move choice.
     Strategic,
     /// "Aggressive" profile modeled on the technique set of top engines
     /// (advanced engines class): the large TT plus the speculative pruning
@@ -86,6 +104,8 @@ pub enum SearchProfile {
 }
 
 impl SearchProfile {
+    /// Transposition table size in entries. The pruning-heavy profiles get 4x
+    /// the table because they revisit more transpositions per node searched.
     #[inline]
     fn tt_entries(self) -> usize {
         match self {
@@ -94,11 +114,15 @@ impl SearchProfile {
         }
     }
 
+    /// Whether to order root moves with the guided (eval-driven) pass. Only
+    /// worth its cost from depth 3 up, below which the search is cheap enough
+    /// that ordering overhead dominates.
     #[inline]
     fn uses_guided_root(self, depth: i32) -> bool {
         self == SearchProfile::Strategic && depth >= 3
     }
 
+    /// Root-move index from which late-move reductions start applying.
     #[inline]
     fn lmr_min_move(self) -> u32 {
         match self {
@@ -157,6 +181,8 @@ pub struct SearchLimits {
 }
 
 impl SearchLimits {
+    /// Fixed-depth search with no time or node cap — deterministic, and what
+    /// the plain [`Searcher`] trait impl uses.
     pub fn depth(max_depth: u32) -> Self {
         Self {
             max_depth,
@@ -164,6 +190,8 @@ impl SearchLimits {
             movetime_ms: 0,
         }
     }
+    /// Bound by node count (and a depth ceiling). Reproducible across machines
+    /// in a way a time limit is not, so this is what benchmarks should use.
     pub fn nodes(max_depth: u32, node_limit: u64) -> Self {
         Self {
             max_depth,
@@ -202,10 +230,12 @@ impl Default for TimedSearcher {
 }
 
 impl TimedSearcher {
+    /// A searcher on the [`SearchProfile::Balanced`] profile.
     pub fn new() -> Self {
         Self::with_profile(SearchProfile::Balanced)
     }
 
+    /// A searcher on the [`SearchProfile::Strategic`] profile.
     pub fn strategic() -> Self {
         Self::with_profile(SearchProfile::Strategic)
     }
@@ -215,6 +245,9 @@ impl TimedSearcher {
         Self::with_profile(SearchProfile::Aggressive)
     }
 
+    /// Build a searcher for an explicit profile, sizing the TT and allocating
+    /// the history, killer, and countermove tables up front so the search
+    /// itself never allocates.
     pub fn with_profile(profile: SearchProfile) -> Self {
         Self {
             tt: TranspositionTable::new(profile.tt_entries()),
@@ -232,6 +265,12 @@ impl TimedSearcher {
         self.search_with_stats(board, limits, stop).best_move
     }
 
+    /// Like [`TimedSearcher::search`] but also reports how far the search
+    /// actually got.
+    ///
+    /// The board is cloned rather than borrowed mutably so the caller's
+    /// position is untouched even when the search aborts mid-line with moves
+    /// still on the stack.
     pub fn search_with_stats(
         &mut self,
         board: &Board,
@@ -339,10 +378,19 @@ impl TimedSearcher {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Outcome of one [`TimedSearcher::search_with_stats`] call.
 pub struct SearchStats {
+    /// Best move from the deepest *completed* iteration. Always legal when a
+    /// legal move exists, even if the search was cut short at depth 1.
     pub best_move: HyperMove,
+    /// Deepest iteration that finished. Lower than the requested depth
+    /// whenever `aborted` is set.
     pub completed_depth: u32,
+    /// Nodes visited across all iterations.
     pub nodes: u64,
+    /// Whether a time, node, or stop-flag limit ended the search early. The
+    /// move is still usable — results from a partial iteration are discarded,
+    /// not returned.
     pub aborted: bool,
 }
 

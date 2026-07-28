@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/movegen/mod.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Move generation for HyperChess.
 //!
 //! Pseudo-legal moves for pawns and the sliding/jumping pieces are generated

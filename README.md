@@ -77,7 +77,7 @@ Or run the engine binary directly:
 
 ```bash
 cargo run -p hyperchess-driver -- uci        # speak UCI to any compatible GUI
-cargo run -p hyperchess-driver -- serve      # stateless REST API with OpenAPI docs
+cargo run -p hyperchess-driver -- api        # stateless REST API with OpenAPI docs
 ```
 
 ## The search
@@ -131,6 +131,25 @@ Every technique, every safety invariant, and the reasoning behind them is docume
 
 Each crate and package carries its own README with details.
 
+## Documentation
+
+| Doc | What's in it |
+| --- | --- |
+| [`docs/hyperchess-laws.md`](docs/hyperchess-laws.md) | The normative rules reference |
+| [`docs/search-architecture.md`](docs/search-architecture.md) | Every search technique, why it exists, and the safety invariants |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Crate/package dependency graphs, data flow, build variants |
+| [`docs/FORMATS.md`](docs/FORMATS.md) | HFEN, HFEN-I, HSAN, and HPGN-I, in one place |
+| [`docs/IDENTITY-PIECES.md`](docs/IDENTITY-PIECES.md) | Why pieces keep a stable identity through promotion |
+| [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md) | The "I just want to try it" onboarding path |
+| [`docs/CLI.md`](docs/CLI.md) | Full CLI flag/engine-name reference |
+| [`docs/UCI.md`](docs/UCI.md) | UCI protocol subset and GUI-integration notes |
+| [`docs/PROJECT-STORY.md`](docs/PROJECT-STORY.md) | Origin and vision |
+| [`docs/ATTRIBUTION-AND-TRUST.md`](docs/ATTRIBUTION-AND-TRUST.md) | Provenance policy and AI-assisted-development disclosure |
+| [`docs/FILE-HEADER-CONVENTION.md`](docs/FILE-HEADER-CONVENTION.md) | The per-file SPDX header/versioning scheme used across this repo |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | What's shipped, what's next, what's explicitly out of scope |
+| [`docs/FAQ.md`](docs/FAQ.md) | Common questions, answered once |
+| [`GOVERNANCE.md`](GOVERNANCE.md) / [`MAINTAINERS.md`](MAINTAINERS.md) | How decisions are made, and by whom |
+
 ## Building from source
 
 Prerequisites: Rust (stable, pinned by `rust-toolchain.toml`), Node.js ≥ 18, `pnpm`, and
@@ -175,6 +194,10 @@ This engine stands on the shoulders of the computer-chess community — Stockfis
 Programming Wiki for the alpha-beta technique canon, the UCT/MCTS research line (Coulom;
 Kocsis & Szepesvári), and the Rust and WebAssembly ecosystems. The full thank-you list is in
 [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+
+Development used orchestrated AI models (Claude, Codex, Gemini) as human-directed drafting and
+implementation aids — disclosed plainly, with the full provenance policy and correction process,
+in [`docs/ATTRIBUTION-AND-TRUST.md`](docs/ATTRIBUTION-AND-TRUST.md).
 
 ## Citing
 

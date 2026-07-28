@@ -1,6 +1,23 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/theme
+// File: packages/theme/src/index.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import type { Theme, BuiltInTheme } from './types/theme';
 
-/** Classic chess board theme */
+/**
+ * Visual themes for the HyperChess board.
+ *
+ * A theme is applied by writing `--hc-*` CSS custom properties onto a host
+ * element, so the renderer never imports colours directly and a theme can be
+ * swapped at runtime without re-rendering. The five bundled themes are exported
+ * individually and also reachable by name through {@link getTheme}.
+ *
+ * @packageDocumentation
+ */
+
+/** Traditional buff-and-olive board, the package default. */
 export const THEME_CLASSIC: Theme = {
   name: 'classic',
   lightSquare: '#f0d9b5',
@@ -14,7 +31,7 @@ export const THEME_CLASSIC: Theme = {
   coordinateText: '#999',
 };
 
-/** Modern minimalist theme */
+/** Low-chroma white/grey board with blue highlights, for light UIs. */
 export const THEME_MODERN: Theme = {
   name: 'modern',
   lightSquare: '#ffffff',
@@ -28,7 +45,7 @@ export const THEME_MODERN: Theme = {
   coordinateText: '#666',
 };
 
-/** Dark theme */
+/** Near-black board with amber highlights, for dark UIs. */
 export const THEME_DARK: Theme = {
   name: 'dark',
   lightSquare: '#2c2c2c',
@@ -42,7 +59,12 @@ export const THEME_DARK: Theme = {
   coordinateText: '#999',
 };
 
-/** High contrast theme for accessibility */
+/**
+ * Pure black-on-white squares with fully saturated red/green/blue highlights,
+ * for low-vision users. The three highlight states use distinct hues rather than
+ * distinct opacities so they stay tellable apart without fine tonal
+ * discrimination.
+ */
 export const THEME_HIGHCONTRAST: Theme = {
   name: 'highcontrast',
   lightSquare: '#ffffff',
@@ -56,7 +78,7 @@ export const THEME_HIGHCONTRAST: Theme = {
   coordinateText: '#000000',
 };
 
-/** Soft pastel theme */
+/** Soft pink board with muted red highlights. */
 export const THEME_PASTEL: Theme = {
   name: 'pastel',
   lightSquare: '#fce4ec',
@@ -70,7 +92,8 @@ export const THEME_PASTEL: Theme = {
   coordinateText: '#c2185b',
 };
 
-/** Map of all built-in themes */
+/** Name-to-theme lookup backing {@link getTheme}; kept private so the exported
+ * constants remain the only way to reference a theme by identity. */
 const THEMES: Record<BuiltInTheme, Theme> = {
   classic: THEME_CLASSIC,
   modern: THEME_MODERN,
@@ -79,12 +102,31 @@ const THEMES: Record<BuiltInTheme, Theme> = {
   pastel: THEME_PASTEL,
 };
 
-/** Get a built-in theme by name */
+/**
+ * Resolve a bundled theme by name.
+ *
+ * Returns the shared module-level object, not a copy — mutating the result
+ * changes the theme for every caller.
+ *
+ * @param name - One of the {@link BuiltInTheme} names.
+ * @returns The matching theme definition.
+ */
 export function getTheme(name: BuiltInTheme): Theme {
   return THEMES[name];
 }
 
-/** Apply theme to DOM element via CSS variables */
+/**
+ * Write a theme's colours onto an element as `--hc-*` CSS custom properties.
+ *
+ * Because the properties are set as inline styles they cascade to the element's
+ * whole subtree, so applying a theme to a container themes every board inside
+ * it. Switching themes only overwrites the properties the new theme defines:
+ * `--hc-coordinate-text` is left in place when the incoming theme omits
+ * `coordinateText`, so a stale value from a previous theme can persist.
+ *
+ * @param element - Host element to style; typically the board's container.
+ * @param theme - Theme whose colours are written.
+ */
 export function applyTheme(element: HTMLElement, theme: Theme): void {
   element.style.setProperty('--hc-light-square', theme.lightSquare);
   element.style.setProperty('--hc-dark-square', theme.darkSquare);

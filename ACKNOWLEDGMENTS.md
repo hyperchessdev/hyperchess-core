@@ -47,6 +47,15 @@ maintainers shared their work. Thank you.
 - The **FIDE Laws of Chess** — the foundation the HyperChess laws extend.
 - Everyone who playtested HyperChess and shaped the Eagle/Hawk rules into their current form.
 
+## AI-assisted development
+
+Claude, Codex, and Gemini were used, under continuous human direction, as drafting,
+translation/re-engineering, and implementation aids across roughly three months of development,
+at an estimated cost of **US$5,000**. They assisted analysis, code, and documentation; they are
+not authors of record and have no authority over licensing, correctness claims, or project
+direction — every change is human-reviewed and human-owned. Full disclosure and the standard we
+hold AI-assisted contributions to: [`docs/ATTRIBUTION-AND-TRUST.md`](docs/ATTRIBUTION-AND-TRUST.md).
+
 ---
 
 *If your work is used here and missing from this list, that's a bug — please open a PR.*

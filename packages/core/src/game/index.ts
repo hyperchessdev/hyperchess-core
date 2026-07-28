@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/game/index.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { Game, GameStatus } from '../types/game';
 import { createBoard } from '../board/create';
 import { HfenString } from '../types/board';

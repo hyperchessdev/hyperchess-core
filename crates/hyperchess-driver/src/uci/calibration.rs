@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/uci/calibration.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Empirical piece-value calibration for Eagle and Hawk.
 //!
 //! Strategy (Phase 1, P1-T1/T2 from the implementation guideline):

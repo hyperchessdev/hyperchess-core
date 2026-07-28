@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HyperChess WASM bindings — two independent wasm-bindgen surfaces sharing
 //! one wasm-pack build target:
 //! - [`WasmBoard`] (from `board`, formerly `src/hyperchess/src/wasm.rs`) —
@@ -81,18 +87,25 @@ mod wasm_api {
             })
         }
 
+        /// Draw one frame. JS drives the render loop, so this must be called
+        /// from `requestAnimationFrame` — the renderer never schedules itself.
         pub fn render(&self) {
             self.inner.borrow_mut().render();
         }
 
+        /// Match the swapchain to a new canvas size, in physical pixels.
         pub fn resize(&self, width: u32, height: u32) {
             self.inner.borrow_mut().resize(width, height);
         }
 
+        /// Rotate the camera around the board by a *delta* in radians;
+        /// pitch is clamped internally so the camera cannot flip over the pole.
         pub fn orbit(&self, dyaw: f32, dpitch: f32) {
             self.inner.borrow_mut().orbit(dyaw, dpitch);
         }
 
+        /// Scale the camera distance by `factor` (`>1` pulls back, `<1` moves
+        /// in), clamped to the scene's usable range.
         pub fn zoom(&self, factor: f32) {
             self.inner.borrow_mut().zoom(factor);
         }

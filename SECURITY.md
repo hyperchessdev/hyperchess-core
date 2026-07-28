@@ -20,7 +20,7 @@ in scope:
 
 - **HFEN / HSAN / UCI parsing** (`hyperchess-rules`, `@hyperchess/core`) — panics, out-of-bounds
   access, or resource exhaustion from crafted position/move strings.
-- **The REST driver** (`hyperchess-driver serve`) — request handling, resource limits, and the
+- **The REST driver** (`hyperchess-driver api`) — request handling, resource limits, and the
   statelessness guarantee (no cross-request contamination).
 - **The WASM boundary** (`hyperchess-wasm`, `@hyperchess/wasm`) — memory safety across the
   JS↔WASM interface.

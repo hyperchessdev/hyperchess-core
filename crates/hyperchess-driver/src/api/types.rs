@@ -1,34 +1,50 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/api/types.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Request/response DTOs for the API driver — see
 //! docs/hyperchess-core-extraction-plan.md §6 for the design.
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+/// Body of `POST /board/fen-validate`.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct FenValidateRequest {
     /// A position in HFEN(-I) notation.
     pub fen: String,
 }
 
+/// Result of `POST /board/fen-validate`. Note that a *rejected* FEN is still a
+/// `200 OK` here — validation failure is the endpoint's normal output, not an
+/// error, so callers read `valid` rather than the HTTP status.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct FenValidateResponse {
+    /// Whether the submitted string parsed as a legal position.
     pub valid: bool,
+    /// Parser diagnostic, present only when `valid` is `false`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
+/// Body of `POST /move/legal`.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct LegalMovesRequest {
     /// A position in HFEN(-I) notation.
     pub fen: String,
 }
 
+/// Result of `POST /move/legal`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct LegalMovesResponse {
     /// Legal moves in plain UCI notation (e.g. `"e2e4"`).
     pub moves: Vec<String>,
 }
 
+/// Body of `POST /move/best`. Every field except `fen` is optional; omitted
+/// fields fall back to the server-side defaults documented on each one.
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct BestMoveRequest {
     /// A position in HFEN(-I) notation.
@@ -48,6 +64,7 @@ pub struct BestMoveRequest {
     pub simulations: Option<u32>,
 }
 
+/// Result of `POST /move/best`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct BestMoveResponse {
     /// Best move found, in plain UCI notation.
@@ -57,12 +74,17 @@ pub struct BestMoveResponse {
     pub eval_cp: i32,
 }
 
+/// Result of `GET /health`.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct HealthResponse {
+    /// Always `"ok"` — the endpoint is a liveness probe, so reaching the
+    /// handler at all is the signal; there is no degraded state to report.
     pub status: &'static str,
 }
 
+/// Uniform error body returned with any non-2xx status from this API.
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ErrorResponse {
+    /// Human-readable failure description; not a stable machine-readable code.
     pub error: String,
 }

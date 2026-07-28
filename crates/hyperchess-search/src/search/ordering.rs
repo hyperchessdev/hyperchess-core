@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/search/ordering.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Move ordering shared by the alpha-beta family of searchers.
 //!
 //! Good ordering is what makes alpha-beta prune effectively: trying the best

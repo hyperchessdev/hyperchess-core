@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/cli/game.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Engine-vs-engine game loop — independent engine selection per side.
 
 use std::time::Instant;
@@ -18,13 +24,24 @@ use hyperchess_search_cuda::cuda_mcts;
 
 // ── GPU detection ─────────────────────────────────────────────────────────────
 
+/// Which accelerator, if any, this build can actually dispatch a search to.
+///
+/// Carries the adapter *name* rather than a handle so it can be recorded in
+/// game exports and printed in the CLI banner without keeping the device alive.
 #[derive(Debug, Clone)]
 pub enum GpuBackend {
+    /// CUDA device available; the string is the reported adapter name.
     #[allow(dead_code)]
     Cuda(String),
+    /// CPU-only — either a non-CUDA build or CUDA init failed at runtime.
     None,
 }
 
+/// Probe for a usable GPU once at startup.
+///
+/// Always returns [`GpuBackend::None`] when the `cuda` feature is off, and also
+/// when the feature is on but init fails — a machine without a driver is a
+/// normal case here, not an error, so the game just runs on CPU.
 pub fn detect_gpu() -> GpuBackend {
     #[cfg(feature = "cuda")]
     {
@@ -49,6 +66,9 @@ pub struct EngineConfig {
 }
 
 impl EngineConfig {
+    /// Bundle one side's engine parameters. Fields that do not apply to the
+    /// chosen algorithm (e.g. `simulations` for alpha-beta) are simply ignored
+    /// at search time rather than validated here.
     pub fn new(
         name: &str,
         depth: u32,

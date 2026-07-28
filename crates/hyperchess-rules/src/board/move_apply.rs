@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/move_apply.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Move application and reversal: `apply_move`, `undo_move`, and null moves.
 //!
 //! This is the most behavior-sensitive part of the board: it must keep the

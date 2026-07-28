@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-wasm
+// File: crates/hyperchess-wasm/src/board.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! WASM bindings for HyperChess — exposed via wasm-bindgen.
 
 use hyperchess_rules::tools::Searcher;
@@ -99,6 +105,11 @@ fn wasm_play_game(board: &Board, depth: u32, max_half_moves: usize) -> u8 {
     0 // cap reached → draw
 }
 
+/// JS-facing wrapper around a [`Board`].
+///
+/// Every method takes and returns plain strings or primitives rather than
+/// exposing engine types across the wasm boundary, so the JS side never needs
+/// to mirror the Rust move or piece encodings.
 #[wasm_bindgen]
 pub struct WasmBoard {
     inner: Board,

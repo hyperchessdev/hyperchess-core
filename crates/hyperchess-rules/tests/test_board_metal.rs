@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/tests/test_board_metal.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Board and Metal (Layer 0b / Phase 01) verification tests.
 
 use hyperchess_rules::core::bitboard::BitBoard;

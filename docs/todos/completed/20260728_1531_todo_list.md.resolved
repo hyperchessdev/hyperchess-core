@@ -1,0 +1,26 @@
+# Resolution: HyperChess Core — Documentation Overhaul & Repository Recreation
+
+## Validation Checklist
+- [x] Verify cargo fmt --all --check passes
+- [x] Verify cargo build --workspace succeeds
+- [x] Verify cargo test --workspace passes
+- [x] Verify cargo clippy --workspace --all-targets -- -D warnings passes
+- [x] Verify pnpm run build succeeds (incl. real wasm-pack build)
+- [x] Verify pnpm run test passes (75 tests across core/store/board/theme)
+- [x] Verify every source file under crates/ and packages/*/src has an SPDX header (148/148)
+- [x] Verify all new/edited markdown files are internally consistent (no dead links, correct
+      command names, correct doc cross-references to the pre-existing hyperchess-laws.md /
+      search-architecture.md)
+- [ ] Verify the PR is opened against the real hyperchessdev/hyperchess-core main (pending —
+      final action of this session)
+
+## Outcomes / Summary
+Reconciled a stale local `main` onto the real, already-merged GitHub state (PR #1), then added
+genuinely new documentation (GOVERNANCE.md, MAINTAINERS.md, docs/ATTRIBUTION-AND-TRUST.md,
+docs/ARCHITECTURE.md, docs/FORMATS.md, docs/CLI.md, docs/UCI.md, docs/IDENTITY-PIECES.md,
+docs/PROJECT-STORY.md, docs/GETTING-STARTED.md, docs/ROADMAP.md, docs/FAQ.md,
+docs/FILE-HEADER-CONVENTION.md) without duplicating or contradicting what already existed.
+Applied a per-file SPDX header + version convention across all 148 source files, fixed two real
+pre-existing bugs and two factual doc errors, and used two background agents to close genuine
+rustdoc/TSDoc density gaps. Full verification is green on both the Rust and TypeScript sides.
+Repo deletion/recreation was explicitly reversed in favor of a normal PR, per user confirmation.

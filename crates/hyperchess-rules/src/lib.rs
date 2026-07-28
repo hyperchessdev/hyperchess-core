@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HyperChess rules — a 12x12 chess variant with Eagle and Hawk pieces.
 //!
 //! Board representation, move generation, and legality only. Search

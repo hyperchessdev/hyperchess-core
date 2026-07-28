@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/search/quiescence.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Quiescence search — extends the search at leaf nodes through captures only,
 //! avoiding the horizon effect where a search stops in the middle of a trade.
 //!

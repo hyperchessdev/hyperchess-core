@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Search algorithms for HyperChess — alpha-beta, iterative deepening, MCTS,
 //! and the anytime `TimedSearcher` used by the interactive (WASM + server)
 //! paths. Depends on `hyperchess-rules` for board/move types; does not
@@ -27,12 +33,14 @@ pub struct RandomBot {
 }
 
 impl RandomBot {
+    /// A bot on the default seed, so games are reproducible run to run.
     pub fn new() -> Self {
         // Any fixed non-zero seed works; different positions still diverge
         // because the Zobrist key is mixed into each draw.
         Self::with_seed(0x00c0_ffee_5eed_f00d)
     }
 
+    /// A bot on an explicit seed, to vary play between runs.
     pub fn with_seed(seed: u64) -> Self {
         Self {
             // `| 1` guards the PRNG's non-zero-seed requirement.

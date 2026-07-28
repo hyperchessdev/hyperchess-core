@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search
+// File: crates/hyperchess-search/src/search/mod.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Shared search building blocks used by every CPU searcher.
 //!
 //! Before this module the alpha-beta, iterative-deepening and guided searchers

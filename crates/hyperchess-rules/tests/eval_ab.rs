@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/tests/eval_ab.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! A/B self-play: full `evaluate` (material+PSQT+phase + mobility/king-safety)
 //! vs `evaluate_base` (material+PSQT+phase only). Same fixed-depth negamax for
 //! both sides, so the only variable is the eval function — this isolates whether

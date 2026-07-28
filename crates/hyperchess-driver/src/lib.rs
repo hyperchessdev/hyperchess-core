@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/lib.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HyperChess driver — the integration layer between the engine
 //! (`hyperchess-rules` + `hyperchess-search`[`-cuda`]) and the outside world.
 //!

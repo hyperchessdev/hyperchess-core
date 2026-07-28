@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/types/piece.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { Color } from './move';
 
 /** Piece type (side-agnostic) */

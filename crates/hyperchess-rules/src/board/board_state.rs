@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/board/board_state.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Board state — immutable snapshot of game state for undo.
 
 use super::castle_rights::CastleRights;
@@ -33,6 +39,12 @@ pub struct BoardState {
 }
 
 impl BoardState {
+    /// State for a fresh game: full castling rights, no en-passant target, and
+    /// no predecessor in the undo chain.
+    ///
+    /// `zobrist` is left at 0 — the hash is only meaningful once the board has
+    /// populated it from the actual position, so this is a placeholder rather
+    /// than the hash of an empty board.
     pub fn new() -> Self {
         BoardState {
             castling: CastleRights::ALL,

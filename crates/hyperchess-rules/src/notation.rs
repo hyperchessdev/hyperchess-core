@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/notation.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! HFEN-I / HPGN-I game file import & export.
 //!
 //! This is the single, canonical entry point for reading and writing
@@ -5,7 +11,7 @@
 //! **not** provided: HyperChess is a 12×12 variant with two extra piece
 //! types (Eagle, Hawk) and identity-tracked promotions, none of which have a
 //! faithful encoding in the classic formats. See
-//! `docs/HFEN-I-FORMAT.md` and `docs/HPGN-I-CANONICAL-SPEC.md`.
+//! `docs/FORMATS.md` at the workspace root for the full HFEN/HFEN-I/HSAN/HPGN-I reference.
 //!
 //! [`GameRecord`] is the class every crate under `src/` should use to
 //! import/export a game:
@@ -22,13 +28,20 @@ use std::io;
 /// the HPGN-I move list (one entry per ply).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameRecord {
+    /// HPGN `Event` tag.
     pub event: String,
+    /// HPGN `Site` tag.
     pub site: String,
+    /// HPGN `Date` tag, conventionally `YYYY.MM.DD`.
     pub date: String,
+    /// White player or engine name.
     pub white: String,
+    /// Black player or engine name.
     pub black: String,
     /// `"1-0"` | `"0-1"` | `"1/2-1/2"` | `"*"` (in progress / unknown).
     pub result: String,
+    /// Position the move list starts from. Stored rather than assumed so
+    /// analysis fragments and non-standard starts round-trip correctly.
     pub start_hfen: String,
     /// One HPGN-I string per ply, e.g. `"M:a3a4"`, or plain UCI (`"a3a4"`) if
     /// no identity was tracked at the source square.
@@ -50,6 +63,9 @@ impl GameRecord {
         }
     }
 
+    /// Append one ply. Takes the move already rendered as HPGN-I — the record
+    /// is a container and does no legality checking here; that only happens on
+    /// replay in [`GameRecord::positions`].
     pub fn push_move(&mut self, hpgn_i_move: impl Into<String>) {
         self.moves.push(hpgn_i_move.into());
     }
@@ -124,10 +140,13 @@ impl GameRecord {
         Ok(rec)
     }
 
+    /// Write the game as HPGN-I movetext to `path`.
     pub fn save_hpgni(&self, path: &str) -> io::Result<()> {
         fs::write(path, self.to_hpgni())
     }
 
+    /// Read an HPGN-I file back into a record. Does not validate that the
+    /// moves are legal; call [`GameRecord::positions`] for that.
     pub fn load_hpgni(path: &str) -> Result<Self, String> {
         let text = fs::read_to_string(path).map_err(|e| e.to_string())?;
         Self::from_hpgni(&text)
@@ -169,6 +188,8 @@ impl GameRecord {
         Ok(self.positions()?.join("\n") + "\n")
     }
 
+    /// Replay the game and write every position to `path`, one HFEN-I per
+    /// line. Fails if any recorded move turns out to be illegal.
     pub fn save_hfeni(&self, path: &str) -> Result<(), String> {
         let text = self.to_hfeni()?;
         fs::write(path, text).map_err(|e| e.to_string())

@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/uci/server.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Native HyperChess UCI server.
 //!
 //! Reads UCI commands from stdin, runs the native Rust engine, and writes
@@ -124,11 +130,22 @@ pub fn run() {
 
 // ── Search ────────────────────────────────────────────────────────────────────
 
+/// Parsed form of a UCI `go` command line.
+///
+/// Kept as plain fields rather than an enum because UCI allows the limit
+/// tokens to be combined freely; the search resolves the precedence between
+/// them rather than the parser rejecting the combination.
 #[derive(Debug)]
 pub struct GoArgs {
+    /// Fixed-depth limit. The [`Default`] of 5 applies when `go` carries no
+    /// limit tokens at all.
     pub depth: u32,
+    /// Wall-clock limit in milliseconds; `0` means no time limit.
     pub movetime_ms: u64,
+    /// `go infinite` — search until an explicit `stop`.
     pub infinite: bool,
+    /// `go perft <n>`: run a node-count enumeration instead of a search and
+    /// emit no `bestmove`.
     pub perft_depth: Option<u32>,
 }
 

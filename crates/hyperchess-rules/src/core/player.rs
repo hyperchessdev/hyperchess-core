@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/player.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! The `Player` (side) type and helpers.
 
 use std::fmt;
@@ -11,17 +17,26 @@ pub const ALL_PLAYERS: [Player; 2] = [Player::White, Player::Black];
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(u8)]
+/// Side to move. Discriminants are the `[player]` index used by every
+/// per-player table in this crate.
 pub enum Player {
+    /// Moves first; pawns advance toward increasing rank.
     White = 0,
+    /// Moves second; pawns advance toward decreasing rank.
     Black = 1,
 }
 
 impl Player {
+    /// The opponent. Named method over the [`Not`] impl for call sites where
+    /// `!player` would read ambiguously next to boolean logic.
     #[inline(always)]
     pub fn other_player(self) -> Player {
         !self
     }
 
+    /// Signed square-index delta for a one-square pawn advance: `+12` for
+    /// White, `-12` for Black. Signed because Black's push moves backwards
+    /// through the flat 144-square array.
     #[inline(always)]
     pub fn pawn_push(self) -> i16 {
         match self {

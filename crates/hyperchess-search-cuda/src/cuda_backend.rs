@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-search-cuda
+// File: crates/hyperchess-search-cuda/src/cuda_backend.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Host-side CUDA backend: GPU batch position evaluation and GPU-assisted root search.
 //!
 //! The PTX is compiled at build time from `kernels/src/eval.rs` via `build.rs`.
@@ -328,6 +334,10 @@ fn backup(node: &MiniNode, scores: &[i32]) -> i32 {
 
 // ── CPU fallback ──────────────────────────────────────────────────────────────
 
+/// Run the search entirely on the CPU.
+///
+/// The fallback taken whenever CUDA init or a kernel launch fails, so a machine
+/// without a working GPU still plays — just slower.
 pub fn cpu_alphabeta_move(board: &Board, depth: u32) -> HyperMove {
     use hyperchess_rules::tools::Searcher;
     use hyperchess_search::AlphaBetaSearcher;

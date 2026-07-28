@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-rules
+// File: crates/hyperchess-rules/src/core/sq.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Square type for the 12x12 board (0-143).
 
 use super::bitboard::BitBoard;
@@ -144,15 +150,25 @@ impl std::ops::BitXor for SQ {
 
 // Named square constants for convenience
 impl SQ {
+    /// Bottom-left corner, index 0.
     pub const A1: SQ = SQ::make(0, 0);
+    /// b1.
     pub const B1: SQ = SQ::make(1, 0);
+    /// c1.
     pub const C1: SQ = SQ::make(2, 0);
+    /// Bottom-right corner — the l-file is the 12th, not h as in chess.
     pub const L1: SQ = SQ::make(11, 0);
+    /// a2.
     pub const A2: SQ = SQ::make(0, 1);
-    pub const G2: SQ = SQ::make(6, 1); // White king start
+    /// White's king start. Rank 2, not rank 1: the back rank on a 12x12 board
+    /// carries the extra pieces, and the royal rank sits one row in.
+    pub const G2: SQ = SQ::make(6, 1);
+    /// Top-left corner.
     pub const A12: SQ = SQ::make(0, 11);
+    /// Top-right corner, index 143.
     pub const L12: SQ = SQ::make(11, 11);
-    pub const G11: SQ = SQ::make(6, 10); // Black king start
+    /// Black's king start, mirroring [`SQ::G2`].
+    pub const G11: SQ = SQ::make(6, 10);
 }
 
 #[cfg(test)]

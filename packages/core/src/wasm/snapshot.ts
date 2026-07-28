@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — @hyperchess/core
+// File: packages/core/src/wasm/snapshot.ts
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 import { Board, CastlingRights } from '../types/board';
 import { Color } from '../types/move';
 import { Move, PromotionPiece } from '../types/move';
@@ -13,7 +19,12 @@ import { algebraicToSquare, squareToAlgebraic } from '../utils/square-notation';
  * can share it without either pulling in the other's WASM loading strategy.
  */
 export interface WasmBoardLike {
+  /** Pack the piece placement into one byte per square, where 0 means empty
+   * and the remaining values encode colour and piece type. */
   encode(): Uint8Array;
+
+  /** Render the position as a HFEN string, the source of the fields
+   * (side to move, castling, en passant, clocks) that `encode()` omits. */
   hfen(): string;
 }
 

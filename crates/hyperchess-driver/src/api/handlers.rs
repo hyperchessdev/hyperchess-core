@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// HyperChess Core — hyperchess-driver
+// File: crates/hyperchess-driver/src/api/handlers.rs
+// Version: 1.0.0
+// Copyright (c) 2026 HyperChess Developer Team
+
 //! Route handlers for the API driver.
 
 use axum::extract::Json;
@@ -29,6 +35,7 @@ fn parse_board(fen: &str) -> Result<Board, ApiError> {
     Board::from_hfen(fen).map_err(ApiError)
 }
 
+/// Liveness probe. Does no work beyond proving the process can serve a route.
 #[utoipa::path(
     get,
     path = "/health",
@@ -38,6 +45,11 @@ pub async fn health() -> Json<HealthResponse> {
     Json(HealthResponse { status: "ok" })
 }
 
+/// Parses a HFEN(-I) string and reports whether it describes a legal position.
+///
+/// Deliberately answers `200 OK` for invalid input as well: the caller asked a
+/// yes/no question and got an answer, so the failure belongs in the body rather
+/// than the status line.
 #[utoipa::path(
     post,
     path = "/board/fen-validate",
@@ -57,6 +69,7 @@ pub async fn fen_validate(Json(req): Json<FenValidateRequest>) -> Json<FenValida
     }
 }
 
+/// Returns every legal move in the given position, in plain UCI notation.
 #[utoipa::path(
     post,
     path = "/move/legal",
@@ -78,6 +91,14 @@ pub async fn legal_moves(
     Ok(Json(LegalMovesResponse { moves }))
 }
 
+/// Searches the given position and returns the engine's chosen move.
+///
+/// The searcher is built per request and dropped afterwards, so this endpoint
+/// holds no cross-request state (no transposition table reuse, no pondering) —
+/// each call is independent and reproducible from its body alone.
+///
+/// `eval_cp` is the static evaluation of the position as submitted, not of the
+/// position after `best_move`.
 #[utoipa::path(
     post,
     path = "/move/best",
