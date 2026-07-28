@@ -1,0 +1,11 @@
+# Resolution: Session report + session-report rule
+
+## Validation Checklist
+- [x] Report exists and covers the full session -> docs/dev-reports/20260728-123020-dev-report.md
+- [x] Rule file exists in workspace .claude/rules/session-report.md (parent workspace, outside this repo)
+- [x] Changes pushed to PR branch
+
+## Outcomes / Summary
+Closed stale checkboxes in archived 20260728_1500 list (Steps 11/12 were done but unmarked).
+No other open todos or stale .active background markers found. Wrote the full session dev
+report and the workspace-level session-report rule for future development phases.
