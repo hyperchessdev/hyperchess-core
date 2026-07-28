@@ -50,15 +50,20 @@ jobs:
           cargo fmt --all --check
           cargo test --workspace
 
-      - name: Dry run — package every publishable crate
+      - name: Dry run — validate every publishable crate
         if: ${{ inputs.dry_run }}
         run: |
           # hyperchess-eval has no internal deps, so a full --dry-run works.
           cargo publish --dry-run -p hyperchess-eval
-          # The rest depend on crates that aren't on the registry yet during a
-          # dry run, so validate their packaging without the rebuild step.
+          # The rest can't be packaged before their deps exist on crates.io:
+          # `cargo package` strips path deps and resolves by version against
+          # the registry ("no matching package" until the first real publish).
+          # Until then, validate the manifest/file-list side with --list.
+          # TODO after the first real publish: upgrade these to
+          # `cargo publish --dry-run` for full validation.
           for crate in hyperchess-rules hyperchess-search hyperchess-wasm; do
-            cargo package --no-verify -p "$crate"
+            cargo package --list -p "$crate" > /dev/null
+            echo "$crate: package file list OK"
           done
 
       - name: Publish (in dependency order)
