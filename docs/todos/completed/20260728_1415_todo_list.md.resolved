@@ -1,0 +1,21 @@
+# Resolution: Release pipeline dry-run test
+
+## Validation Checklist
+- [x] All gauntlet steps green (fmt, clippy -D warnings, 22 Rust suites, wasm build, 70 JS tests, zero-dep tree)
+- [x] Secret scans zero hits (tree + full history)
+- [x] Registry dry-runs validated (pnpm pack x5, cargo publish --dry-run eval, package --list rest)
+- [x] PR CI fully green: 7/7 checks on all 3 OSes
+
+## Outcomes / Summary
+The dry-run test caught and fixed four real pipeline defects:
+1. GitHub workflows never ran scripts/ci-stub-rust-cuda-crates.sh -> all cargo jobs failed on
+   the missing /projects/github/rust-cuda absolute-path deps. Now wired into all 5 jobs with
+   sudo on Linux, drive-prefix STUB_ROOT on Windows, and driver workspace-exclusion on macOS
+   (sealed root FS).
+2. Stub lib.rs files were zero-byte and failed cargo fmt --all --check (fmt formats path deps).
+3. release-crates dry-run used cargo package --no-verify, which cannot resolve pre-first-publish
+   internal deps -> switched to cargo package --list until the chain is on crates.io.
+4. npm audit blocked on the vulnerable protobufjs/grpc chain from firebase 9 (auto-installed
+   peer): store peers widened to firebase 9-12 / better-sqlite3 8-12, firebase ^12 pinned as
+   devDep, audit gate now --prod and genuinely clean.
+Also documented: gh workflow run cannot dispatch release workflows until they exist on main.

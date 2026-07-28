@@ -4,6 +4,11 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 description = "HyperChess driver — CLI (engine-vs-engine games, PNG/export) and native UCI server, one `hyperchess` binary with subcommands"
+repository.workspace = true
+homepage.workspace = true
+readme = "docs/README.md"
+keywords = ["chess", "uci", "cli", "hyperchess"]
+categories = ["games", "command-line-utilities"]
 
 [[bin]]
 name = "hyperchess"
@@ -17,8 +22,8 @@ default = []
 cuda = ["dep:hyperchess-search-cuda", "hyperchess-search-cuda/cuda", "dep:cust"]
 
 [dependencies]
-hyperchess-rules = { path = "../hyperchess-rules" }
-hyperchess-search = { path = "../hyperchess-search" }
+hyperchess-rules = { path = "../hyperchess-rules", version = "0.1.0" }
+hyperchess-search = { path = "../hyperchess-search", version = "0.1.0" }
 hyperchess-search-cuda = { path = "../hyperchess-search-cuda", optional = true }
 
 clap = { version = "4", features = ["derive"] }

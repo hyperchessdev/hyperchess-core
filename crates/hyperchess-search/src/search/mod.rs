@@ -20,7 +20,7 @@ pub mod terminal;
 
 pub use ordering::{
     history_bonus, history_penalty, mvv_lva_score, order_by_eval, order_full, order_tactical,
-    promote_tt_move,
+    promote_tt_move, raptor_bonus,
 };
 pub use quiescence::quiesce;
 pub use see::{see, see_ge_zero};

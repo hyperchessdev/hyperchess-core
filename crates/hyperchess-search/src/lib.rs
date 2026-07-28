@@ -13,11 +13,39 @@ pub mod timed;
 
 use hyperchess_rules::board::Board;
 use hyperchess_rules::core::piece_move::HyperMove;
+use hyperchess_rules::tools::prng::PRNG;
 use hyperchess_rules::tools::Searcher;
-use rand::Rng;
 
-/// A bot that plays random legal moves.
-pub struct RandomBot;
+/// A bot that plays uniformly-random legal moves.
+///
+/// Uses the engine's own XorShift64* [`PRNG`] (no external crates), mixing the
+/// position's Zobrist key into every draw. With the default seed a given move
+/// sequence is exactly reproducible — useful for debugging; pass a different
+/// seed to [`RandomBot::with_seed`] to vary games between runs.
+pub struct RandomBot {
+    rng: PRNG,
+}
+
+impl RandomBot {
+    pub fn new() -> Self {
+        // Any fixed non-zero seed works; different positions still diverge
+        // because the Zobrist key is mixed into each draw.
+        Self::with_seed(0x00c0_ffee_5eed_f00d)
+    }
+
+    pub fn with_seed(seed: u64) -> Self {
+        Self {
+            // `| 1` guards the PRNG's non-zero-seed requirement.
+            rng: PRNG::init(seed | 1),
+        }
+    }
+}
+
+impl Default for RandomBot {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Searcher for RandomBot {
     fn best_move(&mut self, board: &Board, _depth: u32) -> HyperMove {
@@ -25,8 +53,8 @@ impl Searcher for RandomBot {
         if moves.is_empty() {
             return HyperMove::null();
         }
-        let idx = rand::thread_rng().gen_range(0..moves.len());
-        moves.as_slice()[idx]
+        let r = self.rng.rand() ^ board.state.zobrist;
+        moves.as_slice()[(r % moves.len() as u64) as usize]
     }
 
     fn name(&self) -> &str {
@@ -45,7 +73,7 @@ pub use timed::{SearchLimits, SearchProfile, TimedSearcher};
 /// Recognised: random, alphabeta (ab), iterative (id), mcts, strategic, pro.
 pub fn make_searcher(name: &str, simulations: u32) -> Box<dyn Searcher> {
     match name.to_lowercase().as_str() {
-        "random" => Box::new(RandomBot),
+        "random" => Box::new(RandomBot::new()),
         "alphabeta" | "ab" => Box::new(AlphaBetaSearcher::new()),
         "iterative" | "id" => Box::new(IterativeSearcher::new()),
         "mcts" => Box::new(MctsSearcher::new(simulations)),

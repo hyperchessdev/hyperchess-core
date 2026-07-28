@@ -1,0 +1,97 @@
+name: Release (crates.io)
+
+# Manual, dry-run-first release pipeline for the Rust crates.
+#
+# Publish order follows the dependency graph:
+#   hyperchess-eval → hyperchess-rules → hyperchess-search → hyperchess-wasm
+#
+# NOT published:
+#   - hyperchess-search-cuda: `publish = false` — depends on local, unpublished
+#     rust-cuda path checkouts. This is permanent policy (extraction plan §5).
+#   - hyperchess-driver: its optional `cuda` feature references the CUDA crate
+#     by path, and crates.io rejects any dependency (even optional) on an
+#     unpublished crate. Publishable once that feature moves behind a separate
+#     shim crate; until then install it with `cargo install --git`.
+#
+# The real publish only runs when dry_run=false AND the CARGO_REGISTRY_TOKEN
+# secret is configured. Default is a dry run — safe to trigger any time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (package/verify only, publish nothing)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stub local rust-cuda path deps (absent on CI runners)
+        shell: bash
+        run: |
+          # hyperchess-driver/search-cuda reference a local rust-cuda checkout by
+          # absolute path; cargo must load those manifests even though the cuda
+          # feature is never enabled here. See the script header for details.
+          case "$(uname -s)" in
+            MINGW*|MSYS*)
+              # cargo resolves the unix-style path against the working drive.
+              export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda"
+              ;;
+            Darwin)
+              # macOS seals the root filesystem — /projects cannot exist. Drop
+              # the driver crate (the only member reaching those paths) from
+              # the workspace on this runner; driver coverage stays on Linux
+              # and Windows.
+              sed -i '' 's|"crates/hyperchess-search-cuda",|"crates/hyperchess-search-cuda",\n    "crates/hyperchess-driver",|' Cargo.toml
+              exit 0
+              ;;
+            *)
+              sudo mkdir -p /projects/github
+              sudo chown "$(id -un)" /projects/github
+              ;;
+          esac
+          bash scripts/ci-stub-rust-cuda-crates.sh
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Verify workspace
+        run: |
+          cargo fmt --all --check
+          cargo test --workspace
+
+      - name: Dry run — validate every publishable crate
+        if: ${{ inputs.dry_run }}
+        run: |
+          # hyperchess-eval has no internal deps, so a full --dry-run works.
+          cargo publish --dry-run -p hyperchess-eval
+          # The rest can't be packaged before their deps exist on crates.io:
+          # `cargo package` strips path deps and resolves by version against
+          # the registry ("no matching package" until the first real publish).
+          # Until then, validate the manifest/file-list side with --list.
+          # TODO after the first real publish: upgrade these to
+          # `cargo publish --dry-run` for full validation.
+          for crate in hyperchess-rules hyperchess-search hyperchess-wasm; do
+            cargo package --list -p "$crate" > /dev/null
+            echo "$crate: package file list OK"
+          done
+
+      - name: Publish (in dependency order)
+        if: ${{ !inputs.dry_run }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN secret is not configured — refusing to publish."
+            exit 1
+          fi
+          for crate in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm; do
+            cargo publish -p "$crate"
+            # give the index time to see the new crate before its dependents publish
+            sleep 45
+          done

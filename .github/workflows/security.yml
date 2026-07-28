@@ -1,0 +1,48 @@
+name: Security audit
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "**/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/security.yml"
+  pull_request:
+    paths:
+      - "**/Cargo.toml"
+      - "Cargo.lock"
+      - "**/package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/security.yml"
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-audit
+      - run: cargo audit
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Blocking gate: production dependencies only — that's what ships to
+      # consumers of the published packages (currently workspace-internal only).
+      - run: pnpm audit --prod --audit-level high
+      # Full audit including dev tooling: informational, never blocks. Bumping
+      # the dev toolchain (vitest/vite/size-limit) is tracked separately.
+      - name: Full audit (informational)
+        run: pnpm audit --audit-level high || true

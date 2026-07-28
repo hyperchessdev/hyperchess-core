@@ -4,6 +4,11 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 description = "no_std single-source evaluation math shared by the CPU evaluator and the GPU kernel"
+repository.workspace = true
+homepage.workspace = true
+readme = "docs/README.md"
+keywords = ["chess", "evaluation", "hyperchess", "no-std"]
+categories = ["games", "no-std", "algorithms"]
 
 [lib]
 # Pure arithmetic, no_std — usable from both the std host crate and the CUDA kernel.

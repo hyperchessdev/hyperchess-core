@@ -20,6 +20,22 @@
     "test": "vitest run"
   },
   "files": ["dist", "README.md"],
-  "keywords": ["hyperchess", "theme", "styling", "css"],
-  "license": "MIT"
+  "keywords": ["hyperchess", "chess", "theme", "styling", "css"],
+  "author": "HyperChess Contributors",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperchessdev/hyperchess-core.git",
+    "directory": "packages/theme"
+  },
+  "homepage": "https://github.com/hyperchessdev/hyperchess-core#readme",
+  "bugs": {
+    "url": "https://github.com/hyperchessdev/hyperchess-core/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }

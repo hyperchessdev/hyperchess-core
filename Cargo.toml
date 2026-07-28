@@ -12,4 +12,7 @@ exclude = [
 [workspace.package]
 edition = "2021"
 license = "GPL-3.0-or-later"
-repository = "https://gitlab.kyrpy.kyrpy.com/kyrpy/hyrperchess-core"
+# Public home (crates.io metadata). Day-to-day development also runs on a
+# private GitLab; the GitHub repo is the canonical open-source location.
+repository = "https://github.com/hyperchessdev/hyperchess-core"
+homepage = "https://github.com/hyperchessdev/hyperchess-core"

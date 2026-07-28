@@ -1,0 +1,54 @@
+name: Bug report
+description: Something behaves incorrectly — wrong move, crash, bad score, API error
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! An HFEN position + move sequence that reproduces the problem
+        makes fixes dramatically faster.
+
+        **Security issues:** please do NOT file them here — see
+        [SECURITY.md](../blob/main/SECURITY.md) for private reporting.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - hyperchess-rules (movegen / legality / HFEN / HSAN)
+        - hyperchess-search (alpha-beta / MCTS / TimedSearcher)
+        - hyperchess-eval (evaluation)
+        - hyperchess-driver (CLI / UCI / REST)
+        - hyperchess-wasm / @hyperchess/wasm
+        - "@hyperchess/core (TypeScript logic)"
+        - "@hyperchess/board / store / theme"
+        - Build / CI / packaging
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: |
+        Ideally: the HFEN string, the moves applied, and the API/CLI call that misbehaves.
+      placeholder: |
+        HFEN: ...
+        Moves: g3g5 ...
+        Call: searcher.search(&board, &SearchLimits::depth(6), &stop)
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Rust/Node version, crate/package versions, browser if WASM.
+    validations:
+      required: false

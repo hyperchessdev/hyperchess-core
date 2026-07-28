@@ -18,7 +18,7 @@
 //! CLI can inject `gpu_batch_eval` for batched GPU leaf scoring. Leaves pending
 //! evaluation carry a **virtual loss** so one batch explores distinct paths.
 
-use rand::Rng;
+use hyperchess_rules::tools::prng::PRNG;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::timed::clock;
@@ -48,8 +48,10 @@ impl MctsNode {
         let moves = board.generate_moves();
         let terminal = moves.is_empty() || board.is_game_over();
         let mut unexplored: Vec<HyperMove> = moves.iter().copied().collect();
-        // Shuffle so expansion order is random
-        let mut rng = rand::thread_rng();
+        // Shuffle so expansion order is unbiased. Seeded from the position's
+        // Zobrist key: deterministic (searches are exactly reproducible) while
+        // still varying between positions. `| 1` guards the zero seed.
+        let mut rng = PRNG::init(board.state.zobrist | 1);
         unexplored.shuffle_rng(&mut rng);
         MctsNode {
             mov,
@@ -76,15 +78,16 @@ impl MctsNode {
     }
 }
 
-// Minimal shuffle helper (avoid importing SliceRandom in no-std contexts)
+// Minimal Fisher-Yates over the engine's own XorShift64* PRNG — keeps the
+// crate zero-dependency (no `rand`).
 trait ShuffleExt {
-    fn shuffle_rng<R: Rng>(&mut self, rng: &mut R);
+    fn shuffle_rng(&mut self, rng: &mut PRNG);
 }
 impl ShuffleExt for Vec<HyperMove> {
-    fn shuffle_rng<R: Rng>(&mut self, rng: &mut R) {
+    fn shuffle_rng(&mut self, rng: &mut PRNG) {
         let n = self.len();
         for i in (1..n).rev() {
-            let j = rng.gen_range(0..=i);
+            let j = (rng.rand() % (i as u64 + 1)) as usize;
             self.swap(i, j);
         }
     }

@@ -1,0 +1,20 @@
+# Resolution: Make the engine zero-dependency
+
+## Validation Checklist
+- [x] Verify cargo tree -e normal shows no external crates for eval/rules/search (default features)
+      -> tree is exactly: hyperchess-search -> hyperchess-rules -> hyperchess-eval
+- [x] Verify fmt/clippy/test workspace green -> FMT_OK, CLIPPY_OK (-D warnings), 22 suites 0 failures
+- [x] Verify pnpm build (wasm-pack) + tests green -> BUILD_OK, 70 tests (core 44, store 12, board 8, theme 6)
+
+## Outcomes / Summary
+- hyperchess-eval: already zero-dep (no_std), untouched.
+- hyperchess-rules: removed `bitflags` (was declared but never invoked - dead), `lazy_static`
+  (single use -> std::sync::LazyLock, call sites unchanged via Deref), `rand` (test-only ->
+  dev-dependencies), and optional `getrandom` (only existed to appease rand on wasm32).
+  `wasm` feature kept as documented no-op for downstream feature-forwarding compatibility.
+- hyperchess-search: removed `rand`; RandomBot and the MCTS expansion shuffle now use the
+  crate-internal XorShift64* PRNG (tools/prng.rs, from Pleco), seeded from the position's
+  Zobrist key - MCTS searches are now exactly reproducible; RandomBot::with_seed(u64) varies
+  games. Optional `js-sys` (browser clock) remains behind the off-by-default `wasm` feature.
+- Docs updated: README "Zero dependencies" section, search crate README, search-architecture
+  (MCTS determinism), CHANGELOG.

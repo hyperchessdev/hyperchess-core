@@ -14,6 +14,31 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Stub local rust-cuda path deps (absent on CI runners)
+        shell: bash
+        run: |
+          # hyperchess-driver/search-cuda reference a local rust-cuda checkout by
+          # absolute path; cargo must load those manifests even though the cuda
+          # feature is never enabled here. See the script header for details.
+          case "$(uname -s)" in
+            MINGW*|MSYS*)
+              # cargo resolves the unix-style path against the working drive.
+              export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda"
+              ;;
+            Darwin)
+              # macOS seals the root filesystem — /projects cannot exist. Drop
+              # the driver crate (the only member reaching those paths) from
+              # the workspace on this runner; driver coverage stays on Linux
+              # and Windows.
+              sed -i '' 's|"crates/hyperchess-search-cuda",|"crates/hyperchess-search-cuda",\n    "crates/hyperchess-driver",|' Cargo.toml
+              exit 0
+              ;;
+            *)
+              sudo mkdir -p /projects/github
+              sudo chown "$(id -un)" /projects/github
+              ;;
+          esac
+          bash scripts/ci-stub-rust-cuda-crates.sh
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -25,10 +50,80 @@ jobs:
         # and never touched by this job — it needs a local rust-cuda checkout
         # this runner doesn't have. See docs/hyperchess-core-extraction-plan.md §5.
 
+  # The engine must keep compiling for the browser: check the wasm feature set
+  # on the actual wasm32 target (this is what packages/wasm builds from).
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stub local rust-cuda path deps (absent on CI runners)
+        shell: bash
+        run: |
+          # hyperchess-driver/search-cuda reference a local rust-cuda checkout by
+          # absolute path; cargo must load those manifests even though the cuda
+          # feature is never enabled here. See the script header for details.
+          case "$(uname -s)" in
+            MINGW*|MSYS*)
+              # cargo resolves the unix-style path against the working drive.
+              export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda"
+              ;;
+            Darwin)
+              # macOS seals the root filesystem — /projects cannot exist. Drop
+              # the driver crate (the only member reaching those paths) from
+              # the workspace on this runner; driver coverage stays on Linux
+              # and Windows.
+              sed -i '' 's|"crates/hyperchess-search-cuda",|"crates/hyperchess-search-cuda",\n    "crates/hyperchess-driver",|' Cargo.toml
+              exit 0
+              ;;
+            *)
+              sudo mkdir -p /projects/github
+              sudo chown "$(id -un)" /projects/github
+              ;;
+          esac
+          bash scripts/ci-stub-rust-cuda-crates.sh
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p hyperchess-wasm --target wasm32-unknown-unknown
+
   js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stub local rust-cuda path deps (absent on CI runners)
+        shell: bash
+        run: |
+          # hyperchess-driver/search-cuda reference a local rust-cuda checkout by
+          # absolute path; cargo must load those manifests even though the cuda
+          # feature is never enabled here. See the script header for details.
+          case "$(uname -s)" in
+            MINGW*|MSYS*)
+              # cargo resolves the unix-style path against the working drive.
+              export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda"
+              ;;
+            Darwin)
+              # macOS seals the root filesystem — /projects cannot exist. Drop
+              # the driver crate (the only member reaching those paths) from
+              # the workspace on this runner; driver coverage stays on Linux
+              # and Windows.
+              sed -i '' 's|"crates/hyperchess-search-cuda",|"crates/hyperchess-search-cuda",\n    "crates/hyperchess-driver",|' Cargo.toml
+              exit 0
+              ;;
+            *)
+              sudo mkdir -p /projects/github
+              sudo chown "$(id -un)" /projects/github
+              ;;
+          esac
+          bash scripts/ci-stub-rust-cuda-crates.sh
+      # `pnpm run build` compiles @hyperchess/wasm from the Rust crate via
+      # wasm-pack, so the js job needs the Rust toolchain too.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

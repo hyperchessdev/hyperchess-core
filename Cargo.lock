@@ -1162,10 +1162,7 @@ version = "0.1.0"
 name = "hyperchess-rules"
 version = "0.1.0"
 dependencies = [
- "bitflags",
- "getrandom 0.2.17",
  "hyperchess-eval",
- "lazy_static",
  "rand 0.8.7",
 ]
 
@@ -1175,7 +1172,6 @@ version = "0.1.0"
 dependencies = [
  "hyperchess-rules",
  "js-sys",
- "rand 0.8.7",
 ]
 
 [[package]]

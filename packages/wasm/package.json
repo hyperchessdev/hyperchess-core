@@ -33,6 +33,22 @@
   "scripts": {
     "build": "../../scripts/build-wasm-sdk.sh"
   },
-  "keywords": ["hyperchess", "wasm", "game", "logic", "webgpu"],
-  "license": "GPL-3.0-or-later"
+  "keywords": ["hyperchess", "chess", "wasm", "webassembly", "game", "engine", "webgpu"],
+  "author": "HyperChess Contributors",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hyperchessdev/hyperchess-core.git",
+    "directory": "packages/wasm"
+  },
+  "homepage": "https://github.com/hyperchessdev/hyperchess-core#readme",
+  "bugs": {
+    "url": "https://github.com/hyperchessdev/hyperchess-core/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
 }

@@ -17,9 +17,12 @@
 //!   **server** spawns a watchdog thread that sets it after `movetime`, giving
 //!   true wall-clock control without leaking the search thread.
 //!
-//! Move ordering, TT handling, killers and butterfly history mirror
-//! [`crate::iterative`]; the only additions are node counting, deadline
-//! checking and abort propagation.
+//! Move ordering combines the TT move, MVV-LVA captures, killers, a
+//! countermove refutation table (indexed by the opponent's previous move) and
+//! butterfly history with the HyperChess-specific "raptor bonus"
+//! ([`crate::search::ordering::raptor_bonus`]) that tries Eagle/Hawk moves
+//! into the enemy king's strike zone early — their jump checks cannot be
+//! blocked, so they refute far more lines than history alone would predict.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -184,6 +187,11 @@ pub struct TimedSearcher {
     tt: TranspositionTable,
     history: Box<[i32]>,
     killers: Box<[[HyperMove; 2]]>,
+    /// Countermove table: `countermoves[prev.from*144 + prev.to]` holds the
+    /// quiet move that most recently refuted (caused a beta cutoff against)
+    /// the opponent move `prev`. A refutation tends to stay a refutation
+    /// wherever the same opponent move appears in the tree.
+    countermoves: Box<[HyperMove]>,
     profile: SearchProfile,
 }
 
@@ -212,6 +220,7 @@ impl TimedSearcher {
             tt: TranspositionTable::new(profile.tt_entries()),
             history: vec![0i32; HISTORY_SIZE].into_boxed_slice(),
             killers: vec![[HyperMove::null(); 2]; MAX_PLY].into_boxed_slice(),
+            countermoves: vec![HyperMove::null(); HISTORY_SIZE].into_boxed_slice(),
             profile,
         }
     }
@@ -242,6 +251,7 @@ impl TimedSearcher {
             tt: &mut self.tt,
             history: &mut self.history,
             killers: &mut self.killers,
+            countermoves: &mut self.countermoves,
             nodes: 0,
             node_limit: limits.node_limit,
             deadline,
@@ -264,7 +274,15 @@ impl TimedSearcher {
                 let mut alpha = prev_score.saturating_sub(delta).max(-VALUE_INFINITE);
                 let mut beta = prev_score.saturating_add(delta).min(VALUE_INFINITE);
                 loop {
-                    let (s, m) = search(&mut board, &mut ctx, depth as i32, alpha, beta, 0);
+                    let (s, m) = search(
+                        &mut board,
+                        &mut ctx,
+                        depth as i32,
+                        alpha,
+                        beta,
+                        0,
+                        HyperMove::null(),
+                    );
                     if ctx.aborted {
                         break (s, m);
                     }
@@ -285,6 +303,7 @@ impl TimedSearcher {
                     -VALUE_INFINITE,
                     VALUE_INFINITE,
                     0,
+                    HyperMove::null(),
                 )
             };
             if ctx.aborted {
@@ -345,6 +364,7 @@ struct Ctx<'a> {
     tt: &'a mut TranspositionTable,
     history: &'a mut [i32],
     killers: &'a mut [[HyperMove; 2]],
+    countermoves: &'a mut [HyperMove],
     nodes: u64,
     node_limit: u64,
     /// Absolute wall-clock deadline (ms, same epoch as `clock::now_ms`), if any.
@@ -384,6 +404,7 @@ fn search(
     mut alpha: Value,
     beta: Value,
     ply: usize,
+    prev: HyperMove, // the move that led to this node (null at the root / after a null move)
 ) -> (Value, HyperMove) {
     if ctx.aborted {
         return (alpha, HyperMove::null());
@@ -483,7 +504,18 @@ fn search(
     {
         let r = if depth >= 6 { 3 } else { 2 };
         board.apply_null_move();
-        let score = -search(board, ctx, depth - 1 - r, -beta, -beta + 1, ply + 1).0;
+        // `prev` is null for the child: there is no real move to learn a
+        // countermove against, and a refutation of a *pass* is meaningless.
+        let score = -search(
+            board,
+            ctx,
+            depth - 1 - r,
+            -beta,
+            -beta + 1,
+            ply + 1,
+            HyperMove::null(),
+        )
+        .0;
         board.undo_null_move();
         if ctx.aborted {
             return (alpha, HyperMove::null());
@@ -499,6 +531,15 @@ fn search(
         return (terminal_value(board, ply as Value), HyperMove::null());
     }
 
+    // Countermove hint: the quiet move that last refuted the opponent's `prev`
+    // anywhere in the tree. Indexed by (from, to) of `prev` — a butterfly
+    // index, same shape as the history table.
+    let counter = if prev.is_null() {
+        HyperMove::null()
+    } else {
+        ctx.countermoves[prev.get_src().0 as usize * 144 + prev.get_dest().0 as usize]
+    };
+
     let ordered = if ply == 0 && ctx.profile.uses_guided_root(depth) {
         let mut guided = order_by_eval(board, &moves);
         crate::search::promote_tt_move(&mut guided, tt_move);
@@ -510,6 +551,7 @@ fn search(
             tt_move,
             ctx.history,
             &ctx.killers[ply_clamped],
+            counter,
         )
     };
     let mut best_move = ordered[0].0;
@@ -556,24 +598,24 @@ fn search(
             let r = lmr_reduction(depth, move_count);
             let reduced = (depth - 1 - r).max(1);
             // Null-window probe at reduced depth.
-            let probe = -search(board, ctx, reduced, -alpha - 1, -alpha, ply + 1).0;
+            let probe = -search(board, ctx, reduced, -alpha - 1, -alpha, ply + 1, m).0;
             if probe > alpha && !ctx.aborted {
                 // It might be good after all — re-search at full depth and window.
-                -search(board, ctx, depth - 1, -beta, -alpha, ply + 1).0
+                -search(board, ctx, depth - 1, -beta, -alpha, ply + 1, m).0
             } else {
                 probe
             }
         } else if move_count == 0 {
             // First move: full window — this is the PV candidate.
-            -search(board, ctx, depth - 1, -beta, -alpha, ply + 1).0
+            -search(board, ctx, depth - 1, -beta, -alpha, ply + 1, m).0
         } else {
             // PVS: prove later moves worse than the PV with a cheap null-window
             // probe; only a fail-high *inside* the window earns a full-window
             // re-search (a probe ≥ beta is already a cutoff), so the chosen
             // move's score stays exact.
-            let probe = -search(board, ctx, depth - 1, -alpha - 1, -alpha, ply + 1).0;
+            let probe = -search(board, ctx, depth - 1, -alpha - 1, -alpha, ply + 1, m).0;
             if probe > alpha && probe < beta && !ctx.aborted {
-                -search(board, ctx, depth - 1, -beta, -alpha, ply + 1).0
+                -search(board, ctx, depth - 1, -beta, -alpha, ply + 1, m).0
             } else {
                 probe
             }
@@ -609,6 +651,12 @@ fn search(
                     if k[0] != m {
                         k[1] = k[0];
                         k[0] = m;
+                    }
+                    // Remember this quiet as the refutation of the opponent's
+                    // previous move (countermove heuristic).
+                    if !prev.is_null() {
+                        ctx.countermoves
+                            [prev.get_src().0 as usize * 144 + prev.get_dest().0 as usize] = m;
                     }
                 }
                 break;
