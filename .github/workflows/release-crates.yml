@@ -1,0 +1,67 @@
+name: Release (crates.io)
+
+# Manual, dry-run-first release pipeline for the Rust crates.
+#
+# Publish order follows the dependency graph:
+#   hyperchess-eval → hyperchess-rules → hyperchess-search → hyperchess-wasm
+#
+# NOT published:
+#   - hyperchess-search-cuda: `publish = false` — depends on local, unpublished
+#     rust-cuda path checkouts. This is permanent policy (extraction plan §5).
+#   - hyperchess-driver: its optional `cuda` feature references the CUDA crate
+#     by path, and crates.io rejects any dependency (even optional) on an
+#     unpublished crate. Publishable once that feature moves behind a separate
+#     shim crate; until then install it with `cargo install --git`.
+#
+# The real publish only runs when dry_run=false AND the CARGO_REGISTRY_TOKEN
+# secret is configured. Default is a dry run — safe to trigger any time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (package/verify only, publish nothing)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Verify workspace
+        run: |
+          cargo fmt --all --check
+          cargo test --workspace
+
+      - name: Dry run — package every publishable crate
+        if: ${{ inputs.dry_run }}
+        run: |
+          # hyperchess-eval has no internal deps, so a full --dry-run works.
+          cargo publish --dry-run -p hyperchess-eval
+          # The rest depend on crates that aren't on the registry yet during a
+          # dry run, so validate their packaging without the rebuild step.
+          for crate in hyperchess-rules hyperchess-search hyperchess-wasm; do
+            cargo package --no-verify -p "$crate"
+          done
+
+      - name: Publish (in dependency order)
+        if: ${{ !inputs.dry_run }}
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          if [ -z "$CARGO_REGISTRY_TOKEN" ]; then
+            echo "::error::CARGO_REGISTRY_TOKEN secret is not configured — refusing to publish."
+            exit 1
+          fi
+          for crate in hyperchess-eval hyperchess-rules hyperchess-search hyperchess-wasm; do
+            cargo publish -p "$crate"
+            # give the index time to see the new crate before its dependents publish
+            sleep 45
+          done

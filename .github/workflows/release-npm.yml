@@ -1,0 +1,62 @@
+name: Release (npm)
+
+# Manual, dry-run-first release pipeline for the @hyperchess/* packages.
+#
+# Policy (see docs/hyperchess-core-extraction-plan.md §7/§9b): before any real
+# public publish, the packages should also have passed the private-registry DX
+# gate — publish to the internal registry with an explicit --registry flag and
+# install them into a scratch project. This workflow's default is a dry run;
+# the real publish only runs when dry_run=false AND the NPM_TOKEN secret is
+# configured.
+#
+# @hyperchess/wasm ships the compiled Rust engine, so the wasm-pack build runs
+# first — pnpm builds it via packages/wasm's build script.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (build + pack only, publish nothing)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build
+      - run: pnpm run test
+
+      - name: Dry run — pack every package
+        if: ${{ inputs.dry_run }}
+        run: pnpm -r publish --dry-run --no-git-checks
+
+      - name: Publish to npm (public, with provenance)
+        if: ${{ !inputs.dry_run }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not configured — refusing to publish."
+            exit 1
+          fi
+          pnpm -r publish --access public --no-git-checks --publish-branch main

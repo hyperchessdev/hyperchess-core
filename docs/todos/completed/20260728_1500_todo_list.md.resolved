@@ -1,0 +1,49 @@
+# Resolution: Engine inspection, search hardening, full docs, npm/CI-CD open-source publishing kit
+
+## Validation Checklist
+- [x] Verify cargo test --workspace passes (baseline and after search changes) — all suites green, incl. golden perft, searcher-unification golden, regression, rules-integration
+- [x] Verify cargo clippy --workspace --all-targets -D warnings is clean (required fixing pre-existing eq_op error in hyperchess-driver)
+- [x] Verify cargo fmt --all --check is clean (required [workspace] table in excluded CUDA crate for worktree checkouts)
+- [x] Verify pnpm install/build/test pass — BUILD_OK; 70 tests green (core 44, store 12, board 8, theme 6); required fixing pre-existing ProSearcher wasm32 compile break
+- [x] Verify no secrets (GitLab PAT, tokens) in any committed file — tree scan and full-history scan (25 commits): 0 hits
+- [x] Verify hyperchess-search-cuda still has publish = false
+- [x] Verify draft PR opened on GitHub (hyperchessdev account), branch only — no changes pushed to main
+- [x] Verify release workflows default to dry-run (no accidental publish) — both release-npm.yml and release-crates.yml default dry_run=true and refuse to publish without secrets
+
+## Outcomes / Summary
+
+### Engine inspection (vs the HyperChess laws)
+The engine implements the full law set: 12×12 board, Eagle/Hawk jumpers (movegen + SEE values +
+unblockable-check handling), rank-3/10 double-step + en passant, rank-12/1 promotion incl. E/H,
+g-file castling, 224-half-move rule, raptor insufficient material. The search stack was already
+unified on the canonical TimedSearcher; verified by the searcher_unification_golden test.
+
+### Search hardening (new, unique)
+1. Countermove refutation table (144×144, butterfly-indexed by the opponent's previous move),
+   ordered in a strict band between killers (7500) and quiet history (≤6900).
+2. "Raptor bonus" — HyperChess-specific ordering: quiet Eagle/Hawk moves landing within
+   Chebyshev ≤ 4 of the enemy king (their jump range) get +400 inside the quiet band, because
+   raptor checks cannot be blocked by interposition. 5 new unit tests pin the ordering bands.
+
+### Pre-existing breakages found and fixed
+- hyperchess-wasm did not compile for wasm32 (leftover ProSearcher import + duplicated
+  "strategic" match arm from the profile-rename commit) — the WASM SDK was unbuildable on main.
+- hyperchess-driver failed clippy -D warnings (eq_op: duplicated "strategic" comparison;
+  duplicated match literal).
+- cargo fmt/metadata failed from git worktrees (excluded CUDA crate lacked a [workspace] table).
+
+### Publishing kit
+- Docs: rewritten root README (laws table, npm/Rust/WASM quickstarts vs verified APIs, GPL
+  boundary guidance), docs/search-architecture.md (full technique + safety-invariant +
+  tuning reference), docs/hyperchess-laws.md, package READMEs for board/store/theme.
+- Community: CONTRIBUTING, CODE_OF_CONDUCT (Covenant 2.1), SECURITY (private reporting,
+  scope), ACKNOWLEDGMENTS (Stockfish, CPW, MCTS/UCT literature, toolchains), CITATION.cff,
+  CHANGELOG, issue templates (bug/feature/config), PR template.
+- npm: unified GPL-3.0-or-later across all 5 packages; repository/homepage/bugs/keywords/
+  publishConfig/engines metadata added.
+- crates.io: workspace repository/homepage → GitHub; per-crate readme/keywords/categories;
+  version keys on path deps (publish order eval→rules→search→wasm; driver excluded while its
+  optional cuda feature references the unpublished CUDA crate).
+- CI/CD: ci.yml extended (wasm32 check job; js job builds real WASM), security.yml
+  (cargo-audit + pnpm audit, weekly + manifest-change triggered), release-crates.yml +
+  release-npm.yml (manual, dry-run default, token-gated), dependabot.yml.

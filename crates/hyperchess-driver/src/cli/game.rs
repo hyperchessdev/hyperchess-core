@@ -80,10 +80,12 @@ impl EngineConfig {
             "iterative" | "id" => format!("CPU-ID(d{})", self.depth),
             "guided" | "guided_ab" => format!("CPU-GAB(d{})", self.depth),
             "guided_id" => format!("CPU-GID(d{})", self.depth),
-            "strategic" | "strategic" | "strategic_like" => {
+            "strategic" | "strategic_like" => {
                 format!("CPU-Strategic(d{})", self.depth)
             }
-            "aggressive" | "commercial" | "stockfish_like" => format!("CPU-Aggressive(d{})", self.depth),
+            "aggressive" | "commercial" | "stockfish_like" => {
+                format!("CPU-Aggressive(d{})", self.depth)
+            }
             "random" => "Random".to_string(),
             other => other.to_string(),
         }
@@ -285,7 +287,7 @@ fn pick_move(
         return (mv, "Random".to_string(), dr);
     }
 
-    if name_lower == "strategic" || name_lower == "strategic" || name_lower == "strategic_like" {
+    if name_lower == "strategic" || name_lower == "strategic_like" {
         let (mv, depth_used) = if no_timeout {
             use hyperchess_rules::tools::Searcher;
             (

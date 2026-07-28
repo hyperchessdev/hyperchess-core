@@ -3,8 +3,8 @@
 use hyperchess_rules::tools::Searcher;
 use hyperchess_rules::Board;
 use hyperchess_search::{
-    AlphaBetaSearcher, GuidedAlphaBeta, GuidedIterative, IterativeSearcher, MctsSearcher,
-    ProSearcher, SearchLimits, SearchProfile, StrategicSearcher, TimedSearcher,
+    AggressiveSearcher, AlphaBetaSearcher, GuidedAlphaBeta, GuidedIterative, IterativeSearcher,
+    MctsSearcher, SearchLimits, SearchProfile, StrategicSearcher, TimedSearcher,
 };
 use wasm_bindgen::prelude::*;
 
@@ -288,7 +288,7 @@ impl WasmBoard {
     /// speculative pruning family — reverse futility, frontier futility, delta
     /// pruning). The strongest fixed-depth option.
     pub fn best_move_pro(&mut self, depth: u32) -> String {
-        let mut searcher = ProSearcher::new();
+        let mut searcher = AggressiveSearcher::new();
         let m = searcher.best_move(&self.inner, depth);
         if m.is_null() {
             String::new()
@@ -343,7 +343,7 @@ impl WasmBoard {
     ) -> String {
         use std::sync::atomic::AtomicBool;
         let profile = match profile.to_lowercase().as_str() {
-            "strategic" | "strategic" | "strategic_like" => SearchProfile::Strategic,
+            "strategic" | "strategic_like" => SearchProfile::Strategic,
             "aggressive" | "commercial" | "stockfish_like" => SearchProfile::Aggressive,
             _ => SearchProfile::Balanced,
         };

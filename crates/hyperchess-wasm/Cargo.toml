@@ -4,6 +4,11 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 description = "HyperChess WASM bindings — WasmBoard (rules+search, from src/hyperchess/src/wasm.rs) and Scene3D (WebGPU/WebGL board renderer, from the former standalone hyperchess_3d crate), one wasm-pack build target"
+repository.workspace = true
+homepage.workspace = true
+readme = "docs/README.md"
+keywords = ["chess", "wasm", "webgpu", "hyperchess"]
+categories = ["games", "wasm"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -31,8 +36,8 @@ log = "0.4"
 # `hyperchess_3d::pieces` (now `hyperchess_wasm::pieces`), nothing chess-engine
 # related.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-hyperchess-rules = { path = "../hyperchess-rules", features = ["wasm"] }
-hyperchess-search = { path = "../hyperchess-search", features = ["wasm"] }
+hyperchess-rules = { path = "../hyperchess-rules", version = "0.1.0", features = ["wasm"] }
+hyperchess-search = { path = "../hyperchess-search", version = "0.1.0", features = ["wasm"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"

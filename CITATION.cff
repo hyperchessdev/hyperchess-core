@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use HyperChess Core in your research, please cite it as below."
+title: "HyperChess Core"
+type: software
+authors:
+  - name: "HyperChess Contributors"
+repository-code: "https://github.com/hyperchessdev/hyperchess-core"
+url: "https://github.com/hyperchessdev/hyperchess-core"
+license: GPL-3.0-or-later
+keywords:
+  - chess
+  - chess-variant
+  - game-engine
+  - alpha-beta-search
+  - monte-carlo-tree-search
+  - webassembly
+abstract: >-
+  HyperChess Core is an open-source engine for HyperChess, a 12x12 chess variant with two
+  jumping pieces (Eagle and Hawk). It provides bitboard move generation, an anytime
+  alpha-beta search with transposition table and modern pruning/ordering heuristics, a UCT
+  Monte Carlo Tree Search, a CLI/UCI/REST driver, and a TypeScript/WebAssembly SDK.

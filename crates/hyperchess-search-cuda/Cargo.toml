@@ -24,3 +24,9 @@ cust_raw = { path = "/projects/github/rust-cuda/crates/cust_raw", default-featur
 
 [build-dependencies]
 cuda_builder = { path = "/projects/github/rust-cuda/crates/cuda_builder", features = ["rustc_codegen_nvvm", "llvm19"], optional = true }
+
+# This crate is excluded from the parent workspace (local rust-cuda path
+# deps — see the root Cargo.toml). The empty [workspace] table makes it its
+# own workspace root, so cargo metadata resolves correctly from any checkout
+# location (plain clones, git worktrees, vendored copies).
+[workspace]

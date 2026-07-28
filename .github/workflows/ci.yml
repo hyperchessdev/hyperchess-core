@@ -25,10 +25,30 @@ jobs:
         # and never touched by this job — it needs a local rust-cuda checkout
         # this runner doesn't have. See docs/hyperchess-core-extraction-plan.md §5.
 
+  # The engine must keep compiling for the browser: check the wasm feature set
+  # on the actual wasm32 target (this is what packages/wasm builds from).
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p hyperchess-wasm --target wasm32-unknown-unknown
+
   js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # `pnpm run build` compiles @hyperchess/wasm from the Rust crate via
+      # wasm-pack, so the js job needs the Rust toolchain too.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

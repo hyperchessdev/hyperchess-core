@@ -4,6 +4,17 @@ Search algorithms for HyperChess — alpha-beta, iterative deepening, MCTS, and 
 `TimedSearcher` used by the interactive (WASM + server) paths. Depends on `hyperchess-rules` for
 board/move types; nothing in `hyperchess-rules` depends back on this crate.
 
+Every public searcher name delegates to the single canonical `TimedSearcher`: iterative
+deepening with aspiration windows, PVS, a transposition table with root-safe probing, check
+extensions, null-move pruning, LMR, SEE-pruned quiescence, and an ordering stack of TT move →
+MVV-LVA captures → killers → **countermove table** → butterfly history with the
+HyperChess-specific **raptor bonus** (Eagle/Hawk moves into the enemy king's strike zone are
+tried early — their jump checks cannot be blocked by interposition). The `Aggressive` profile
+adds reverse futility, frontier futility, and quiescence delta pruning.
+
+**The full technique-by-technique guide — including the safety invariants every PR must
+preserve and a tuning table — is [`docs/search-architecture.md`](../../../docs/search-architecture.md).**
+
 Full architecture, extraction history, and roadmap: see the workspace-level
 [`docs/hyperchess-core-extraction-plan.md`](../../../docs/hyperchess-core-extraction-plan.md)
 (§2 component table, §12 Phase 3 — including the five files carried over here from

@@ -4,6 +4,11 @@ version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 description = "HyperChess search algorithms — alpha-beta, iterative deepening, MCTS, and the anytime TimedSearcher"
+repository.workspace = true
+homepage.workspace = true
+readme = "docs/README.md"
+keywords = ["chess", "alpha-beta", "mcts", "search", "hyperchess"]
+categories = ["games", "algorithms", "game-engines"]
 
 [features]
 # Gates timed::clock's js_sys::Date::now() path (browsers can't interrupt a
@@ -15,7 +20,7 @@ description = "HyperChess search algorithms — alpha-beta, iterative deepening,
 wasm = ["dep:js-sys", "hyperchess-rules/wasm"]
 
 [dependencies]
-hyperchess-rules = { path = "../hyperchess-rules" }
+hyperchess-rules = { path = "../hyperchess-rules", version = "0.1.0" }
 rand = "0.8"
 js-sys = { version = "0.3", optional = true }
 
