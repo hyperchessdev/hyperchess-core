@@ -16,6 +16,11 @@
 # --features cuda), so their contents are irrelevant beyond satisfying manifest resolution.
 set -euo pipefail
 
+# Where to create the stub checkout. Default matches the dev-machine layout;
+# GitHub CI overrides it on Windows, where cargo resolves the unix-style
+# absolute path against the working drive.
+STUB_ROOT="${STUB_ROOT:-/projects/github/rust-cuda}"
+
 declare -A FEATURES=(
   [cust]=""
   [cust_raw]="driver"
@@ -28,7 +33,7 @@ declare -A VERSIONS=(
 )
 
 for name in "${!VERSIONS[@]}"; do
-  dir="/projects/github/rust-cuda/crates/${name}"
+  dir="${STUB_ROOT}/crates/${name}"
   mkdir -p "${dir}/src"
   {
     printf '[package]\nname = "%s"\nversion = "%s"\nedition = "2021"\n' "$name" "${VERSIONS[$name]}"

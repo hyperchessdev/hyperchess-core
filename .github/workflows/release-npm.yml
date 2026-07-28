@@ -29,6 +29,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Stub local rust-cuda path deps (absent on CI runners)
+        shell: bash
+        run: |
+          # hyperchess-driver/search-cuda reference a local rust-cuda checkout by
+          # absolute path; cargo must load those manifests even though the cuda
+          # feature is never enabled here. See the script header for details.
+          case "$(uname -s)" in
+            MINGW*|MSYS*) export STUB_ROOT="/$(pwd | cut -d/ -f2)/projects/github/rust-cuda" ;;
+          esac
+          bash scripts/ci-stub-rust-cuda-crates.sh
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
