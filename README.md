@@ -101,6 +101,15 @@ from the deepest *completed* iteration:
 There is also a full **MCTS (UCT) searcher** with static-eval rollouts and virtual-loss support
 for batched (GPU) leaf evaluation.
 
+### Zero dependencies
+
+The engine proper — `hyperchess-eval`, `hyperchess-rules`, `hyperchess-search` — has **zero
+external crates** in its default build. Randomness comes from the engine's own seeded
+XorShift64* PRNG (which also makes MCTS runs exactly reproducible), lazy statics use
+`std::sync::LazyLock`. What you audit is what runs: the engine's supply-chain surface is this
+repository. (The optional `wasm` feature adds only `js-sys`, for the browser wall-clock; the
+driver and binding crates naturally carry their own CLI/server/wasm-bindgen dependencies.)
+
 Every technique, every safety invariant, and the reasoning behind them is documented in
 [`docs/search-architecture.md`](docs/search-architecture.md).
 

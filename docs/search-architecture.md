@@ -147,6 +147,10 @@ GPU/NN evaluation:
 - Arena-allocated tree (indices, not pointers) with `UCB1` selection (`C = √2`), expansion,
   **static-eval rollouts** (far stronger than random playouts on a 144-square board; values
   clamped to ±3000 and normalised to [-1, 1]), and sign-alternating backpropagation.
+- **Deterministic by construction**: the expansion-order shuffle is seeded from each position's
+  Zobrist key (the engine's own XorShift64* PRNG — no external crates), so identical inputs
+  reproduce identical searches. Reproducibility turns "MCTS did something weird" reports into
+  debuggable test cases.
 - Terminal nodes score exactly (mate/draw), and are never expanded.
 - **Virtual loss** supports batched leaf evaluation: `mcts_with_eval_bounded` collects a batch of
   leaves, lets a caller-supplied evaluator (e.g. the CUDA crate) score them all at once, and

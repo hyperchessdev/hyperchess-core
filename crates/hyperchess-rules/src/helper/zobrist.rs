@@ -22,9 +22,10 @@ pub struct ZobristKeys {
     pub version_salt: u64,
 }
 
-lazy_static! {
-    pub static ref ZOBRIST: ZobristKeys = ZobristKeys::init();
-}
+/// Lazily-initialized global key set. `std::sync::LazyLock` (not an external
+/// macro crate) — dereferences exactly like the old `lazy_static` binding, so
+/// call sites read `ZOBRIST.side`, `ZOBRIST.castle(..)`, etc. unchanged.
+pub static ZOBRIST: std::sync::LazyLock<ZobristKeys> = std::sync::LazyLock::new(ZobristKeys::init);
 
 impl ZobristKeys {
     fn init() -> Self {

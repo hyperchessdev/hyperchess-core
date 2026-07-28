@@ -8,6 +8,13 @@ the first tagged release.
 
 ### Added
 
+- **Zero-dependency engine**: `hyperchess-eval`, `hyperchess-rules`, and `hyperchess-search`
+  now build with no external crates by default. `rand` moved to dev-dependencies (rules) or was
+  replaced by the engine's own XorShift64* PRNG (RandomBot, MCTS expansion shuffle — now
+  deterministic/reproducible, seeded from the Zobrist key); `lazy_static` replaced by
+  `std::sync::LazyLock`; unused `bitflags` and the optional `getrandom` dropped. The optional
+  `wasm` feature adds only `js-sys`.
+
 - **Countermove heuristic** in the canonical `TimedSearcher`: a 144×144 refutation table ordered
   between the killers and the history quiets.
 - **Raptor bonus** — HyperChess-specific move ordering: quiet Eagle/Hawk moves entering the enemy

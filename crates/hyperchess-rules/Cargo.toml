@@ -11,23 +11,22 @@ keywords = ["chess", "chess-variant", "board-game", "hyperchess"]
 categories = ["games", "game-engines"]
 
 [features]
-# `rand::thread_rng()` (used in board/mod.rs's zobrist test and elsewhere)
-# pulls in getrandom transitively; getrandom refuses to build for
-# wasm32-unknown-unknown without its "js" feature. This crate's own code
-# never names `getrandom` directly, but declaring it here as an optional dep
-# with features=["js"] and enabling it under this feature unifies that
-# feature across the whole dependency graph (the same reason the source
-# repo's Cargo.toml carried it). Found empirically: dropped in the initial
-# Phase 1 pass, then verifying hyperchess-search's own wasm32 build caught
-# the gap — see docs/hyperchess-core-extraction-plan.md §12 Phase 3.
-wasm = ["dep:getrandom"]
+# Historically this pulled getrandom's "js" feature for wasm32 builds because
+# `rand` was a runtime dependency. The engine is now zero-dependency (`rand`
+# is dev-only, randomness comes from tools/prng.rs), so the feature is an
+# intentional no-op — kept because hyperchess-search and hyperchess-wasm
+# forward "hyperchess-rules/wasm" and removing it would break their builds.
+wasm = []
 
+# ZERO external dependencies — a deliberate guarantee (see README "Zero
+# dependencies"). Randomness: tools/prng.rs (XorShift64*). Lazy statics:
+# std::sync::LazyLock. Do not add crates here without a very strong reason.
 [dependencies]
 hyperchess-eval = { path = "../hyperchess-eval", version = "0.1.0" }
-bitflags = "2"
+
+[dev-dependencies]
+# Tests only (random-game termination fuzzing); never ships.
 rand = "0.8"
-lazy_static = "1"
-getrandom = { version = "0.2", features = ["js"], optional = true }
 
 # NOTE vs. the source repo's src/hyperchess/Cargo.toml: rayon, num_cpus,
 # wasm-bindgen, console_error_panic_hook, and js-sys are all dropped.

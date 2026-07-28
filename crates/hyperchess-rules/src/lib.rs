@@ -24,11 +24,6 @@
 #![allow(clippy::needless_range_loop)]
 #![allow(clippy::too_many_arguments)]
 
-#[macro_use]
-extern crate lazy_static;
-extern crate bitflags;
-extern crate rand;
-
 pub mod board;
 pub mod core;
 pub mod game_replay;

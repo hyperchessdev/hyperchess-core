@@ -20,8 +20,9 @@ categories = ["games", "algorithms", "game-engines"]
 wasm = ["dep:js-sys", "hyperchess-rules/wasm"]
 
 [dependencies]
+# Zero external dependencies by default: randomness (RandomBot, MCTS
+# expansion shuffle) comes from hyperchess-rules' own XorShift64* PRNG.
 hyperchess-rules = { path = "../hyperchess-rules", version = "0.1.0" }
-rand = "0.8"
 js-sys = { version = "0.3", optional = true }
 
 # NOTE vs. the source repo's src/hyperchess/Cargo.toml: rayon and num_cpus
