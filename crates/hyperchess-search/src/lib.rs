@@ -35,14 +35,14 @@ impl Searcher for RandomBot {
 }
 
 pub use alphabeta::AlphaBetaSearcher;
-pub use guided_alphabeta::{GuidedAlphaBeta, GuidedIterative, ShredderStyleSearcher};
+pub use guided_alphabeta::{GuidedAlphaBeta, GuidedIterative, StrategicSearcher};
 pub use iterative::IterativeSearcher;
 pub use mcts::MctsSearcher;
-pub use pro::ProSearcher;
+pub use pro::AggressiveSearcher;
 pub use timed::{SearchLimits, SearchProfile, TimedSearcher};
 
 /// Create a `Searcher` by name string.
-/// Recognised: random, alphabeta (ab), iterative (id), mcts, shredder, pro.
+/// Recognised: random, alphabeta (ab), iterative (id), mcts, strategic, pro.
 pub fn make_searcher(name: &str, simulations: u32) -> Box<dyn Searcher> {
     match name.to_lowercase().as_str() {
         "random" => Box::new(RandomBot),
@@ -51,8 +51,8 @@ pub fn make_searcher(name: &str, simulations: u32) -> Box<dyn Searcher> {
         "mcts" => Box::new(MctsSearcher::new(simulations)),
         "guided" | "guided_ab" => Box::new(GuidedAlphaBeta::new()),
         "guided_id" => Box::new(GuidedIterative::new()),
-        "shredder" | "shredder_style" | "shredder_like" => Box::new(ShredderStyleSearcher::new()),
-        "pro" | "commercial" | "stockfish_like" => Box::new(ProSearcher::new()),
+        "strategic" | "strategic_like" => Box::new(StrategicSearcher::new()),
+        "aggressive" | "commercial" | "stockfish_like" => Box::new(AggressiveSearcher::new()),
         _ => {
             eprintln!("Unknown engine '{}', falling back to alphabeta", name);
             Box::new(AlphaBetaSearcher::new())
@@ -71,6 +71,6 @@ pub mod prelude {
     pub use crate::IterativeSearcher;
     pub use crate::MctsSearcher;
     pub use crate::RandomBot;
-    pub use crate::ShredderStyleSearcher;
+    pub use crate::StrategicSearcher;
     pub use hyperchess_rules::tools::Searcher;
 }

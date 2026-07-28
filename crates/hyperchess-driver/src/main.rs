@@ -37,10 +37,10 @@ enum Commands {
     /// Each side can use a different engine, depth, and simulation count,
     /// enabling direct comparisons (e.g. --white alphabeta --black cuda_mcts).
     Play {
-        /// White engine: random | alphabeta | iterative | shredder | mcts | cuda_mcts
+        /// White engine: random | alphabeta | iterative | strategic | mcts | cuda_mcts
         #[arg(long, default_value = "cuda_mcts")]
         white: String,
-        /// Black engine: random | alphabeta | iterative | shredder | mcts | cuda_mcts
+        /// Black engine: random | alphabeta | iterative | strategic | mcts | cuda_mcts
         #[arg(long, default_value = "cuda_mcts")]
         black: String,
 
@@ -477,11 +477,11 @@ mod progress_tests {
 
     #[test]
     fn progress_payload_shape() {
-        let payload = build_progress_payload(3, 10, &[42, 58, 51], 12.5, "cuda_mcts", "shredder");
+        let payload = build_progress_payload(3, 10, &[42, 58, 51], 12.5, "cuda_mcts", "strategic");
         assert_eq!(payload["games_done"], 3);
         assert_eq!(payload["games_total"], 10);
         assert_eq!(payload["avg_ply"], (42 + 58 + 51) as f64 / 3.0);
         assert_eq!(payload["white_engine"], "cuda_mcts");
-        assert_eq!(payload["black_engine"], "shredder");
+        assert_eq!(payload["black_engine"], "strategic");
     }
 }

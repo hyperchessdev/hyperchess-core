@@ -1,4 +1,4 @@
-//! Pseudo-random number generator (reused from Pleco).
+//! Pseudo-random number generator (reused from PlecoDB).
 
 /// PRNG based on XorShift64*.
 pub struct PRNG {

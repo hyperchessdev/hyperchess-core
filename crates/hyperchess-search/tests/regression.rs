@@ -13,7 +13,7 @@ use hyperchess_rules::tools::eval::evaluate;
 use hyperchess_rules::tools::Searcher;
 use hyperchess_rules::Board;
 use hyperchess_search::{
-    AlphaBetaSearcher, GuidedAlphaBeta, GuidedIterative, IterativeSearcher, ShredderStyleSearcher,
+    AlphaBetaSearcher, GuidedAlphaBeta, GuidedIterative, IterativeSearcher, StrategicSearcher,
 };
 
 const P4_FEN: &str =
@@ -99,15 +99,15 @@ fn searcher_unification_golden() {
         let id = IterativeSearcher::new().best_move(&b, 3).stringify();
         let gab = GuidedAlphaBeta::new().best_move(&b, 3).stringify();
         let gid = GuidedIterative::new().best_move(&b, 3).stringify();
-        let shredder = ShredderStyleSearcher::new().best_move(&b, 3).stringify();
+        let strategic = StrategicSearcher::new().best_move(&b, 3).stringify();
 
         assert!(
             legal.contains(&ab),
             "AB returned illegal move {ab} ({fen_name})"
         );
         assert!(
-            legal.contains(&shredder),
-            "ShredderStyle returned illegal move {shredder} ({fen_name})"
+            legal.contains(&strategic),
+            "Strategic returned illegal move {strategic} ({fen_name})"
         );
         assert_eq!(ab, id, "AB vs ID disagree ({fen_name})");
         assert_eq!(ab, gab, "AB vs GAB disagree ({fen_name})");

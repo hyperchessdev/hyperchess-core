@@ -34,7 +34,7 @@ pub struct BestMoveRequest {
     /// A position in HFEN(-I) notation.
     pub fen: String,
     /// Search algorithm. One of: random, alphabeta (ab), iterative (id),
-    /// mcts, guided (guided_ab), guided_id, shredder, pro. Defaults to
+    /// mcts, guided (guided_ab), guided_id, strategic, pro. Defaults to
     /// `alphabeta` if omitted.
     #[serde(default)]
     pub algorithm: Option<String>,

@@ -26,7 +26,7 @@ const QS_MAX_PLY: usize = 200;
 /// Returns a fail-hard bound in `[alpha, beta]`. `ply` is the distance from the
 /// search root (used for mate scores and the recursion cap). `delta_prune`
 /// additionally skips captures that cannot lift stand-pat near alpha even if
-/// they win the victim outright (the Pro profile's delta pruning). `tick` is
+/// they win the victim outright (the Aggressive profile's delta pruning). `tick` is
 /// called once per node and must return `true` when the search should abort; on
 /// abort the current `alpha` is returned and the caller discards the value.
 pub fn quiesce(

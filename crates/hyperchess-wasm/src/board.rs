@@ -4,7 +4,7 @@ use hyperchess_rules::tools::Searcher;
 use hyperchess_rules::Board;
 use hyperchess_search::{
     AlphaBetaSearcher, GuidedAlphaBeta, GuidedIterative, IterativeSearcher, MctsSearcher,
-    ProSearcher, SearchLimits, SearchProfile, ShredderStyleSearcher, TimedSearcher,
+    ProSearcher, SearchLimits, SearchProfile, StrategicSearcher, TimedSearcher,
 };
 use wasm_bindgen::prelude::*;
 
@@ -273,9 +273,9 @@ impl WasmBoard {
         }
     }
 
-    /// Run the stronger Shredder-style tactical profile.
-    pub fn best_move_shredder(&mut self, depth: u32) -> String {
-        let mut searcher = ShredderStyleSearcher::new();
+    /// Run the stronger strategic-style tactical profile.
+    pub fn best_move_strategic(&mut self, depth: u32) -> String {
+        let mut searcher = StrategicSearcher::new();
         let m = searcher.best_move(&self.inner, depth);
         if m.is_null() {
             String::new()
@@ -284,7 +284,7 @@ impl WasmBoard {
         }
     }
 
-    /// Run the "commercial-grade" Pro profile (PVS, aspiration windows and the
+    /// Run the "aggressive" profile (PVS, aspiration windows and the
     /// speculative pruning family — reverse futility, frontier futility, delta
     /// pruning). The strongest fixed-depth option.
     pub fn best_move_pro(&mut self, depth: u32) -> String {
@@ -330,10 +330,10 @@ impl WasmBoard {
     }
 
     /// Anytime search with a wall-clock budget under a named profile:
-    /// `"balanced"` (default), `"shredder"`, or `"pro"`. Same anytime semantics
-    /// as [`Self::best_move_timed`] — this is what interactive Shredder/Pro
+    /// `"balanced"` (default), `"strategic"`, or `"aggressive"`. Same anytime semantics
+    /// as [`Self::best_move_timed`] — this is what interactive strategic/aggressive
     /// callers should use so the computed move timeout is actually honoured
-    /// (the fixed-depth `best_move_shredder` / `best_move_pro` wrappers ignore it).
+    /// (the fixed-depth `best_move_strategic` / `best_move_pro` wrappers ignore it).
     pub fn best_move_timed_profile(
         &mut self,
         max_depth: u32,
@@ -343,8 +343,8 @@ impl WasmBoard {
     ) -> String {
         use std::sync::atomic::AtomicBool;
         let profile = match profile.to_lowercase().as_str() {
-            "shredder" | "shredder_style" | "shredder_like" => SearchProfile::ShredderStyle,
-            "pro" | "commercial" | "stockfish_like" => SearchProfile::Pro,
+            "strategic" | "strategic" | "strategic_like" => SearchProfile::Strategic,
+            "aggressive" | "commercial" | "stockfish_like" => SearchProfile::Aggressive,
             _ => SearchProfile::Balanced,
         };
         let stop = AtomicBool::new(false);

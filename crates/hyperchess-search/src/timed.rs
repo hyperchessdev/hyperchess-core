@@ -73,13 +73,13 @@ const NULL_MOVE_MIN_DEPTH: i32 = 3;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SearchProfile {
     Balanced,
-    ShredderStyle,
-    /// "Commercial-grade" profile modeled on the technique set of top engines
-    /// (Shredder/Stockfish class): the large TT plus the speculative pruning
+    Strategic,
+    /// "Aggressive" profile modeled on the technique set of top engines
+    /// (advanced engines class): the large TT plus the speculative pruning
     /// family — reverse futility, frontier futility and quiescence delta
     /// pruning. (PVS and aspiration windows are always on for every profile;
     /// they are pure speedups.)
-    Pro,
+    Aggressive,
 }
 
 impl SearchProfile {
@@ -87,20 +87,20 @@ impl SearchProfile {
     fn tt_entries(self) -> usize {
         match self {
             SearchProfile::Balanced => 1 << 20,
-            SearchProfile::ShredderStyle | SearchProfile::Pro => 1 << 22,
+            SearchProfile::Strategic | SearchProfile::Aggressive => 1 << 22,
         }
     }
 
     #[inline]
     fn uses_guided_root(self, depth: i32) -> bool {
-        self == SearchProfile::ShredderStyle && depth >= 3
+        self == SearchProfile::Strategic && depth >= 3
     }
 
     #[inline]
     fn lmr_min_move(self) -> u32 {
         match self {
-            SearchProfile::Balanced | SearchProfile::Pro => LMR_MIN_MOVE,
-            SearchProfile::ShredderStyle => LMR_MIN_MOVE + 1,
+            SearchProfile::Balanced | SearchProfile::Aggressive => LMR_MIN_MOVE,
+            SearchProfile::Strategic => LMR_MIN_MOVE + 1,
         }
     }
 
@@ -109,7 +109,7 @@ impl SearchProfile {
     /// tactical risk at frontier nodes for a much deeper effective search.
     #[inline]
     fn prunes(self) -> bool {
-        self == SearchProfile::Pro
+        self == SearchProfile::Aggressive
     }
 }
 
@@ -198,13 +198,13 @@ impl TimedSearcher {
         Self::with_profile(SearchProfile::Balanced)
     }
 
-    pub fn shredder_style() -> Self {
-        Self::with_profile(SearchProfile::ShredderStyle)
+    pub fn strategic() -> Self {
+        Self::with_profile(SearchProfile::Strategic)
     }
 
-    /// The "commercial-grade" [`SearchProfile::Pro`] search.
+    /// The "commercial-grade" [`SearchProfile::Aggressive`] search.
     pub fn pro() -> Self {
-        Self::with_profile(SearchProfile::Pro)
+        Self::with_profile(SearchProfile::Aggressive)
     }
 
     pub fn with_profile(profile: SearchProfile) -> Self {
@@ -459,7 +459,7 @@ fn search(
         }
     }
 
-    // Reverse futility (static null move, Pro profile): at a shallow node whose
+    // Reverse futility (static null move, Aggressive profile): at a shallow node whose
     // static eval is already comfortably above beta, an actual search will almost
     // surely fail high too. Never in check, at the root, or near mate bounds.
     let prunes = ctx.profile.prunes();
@@ -518,7 +518,7 @@ fn search(
     let mut quiet_tried: Vec<HyperMove> = Vec::new();
     let mut move_count: u32 = 0;
 
-    // Frontier futility (Pro profile): at depth ≤ 2, a quiet move cannot
+    // Frontier futility (Aggressive profile): at depth ≤ 2, a quiet move cannot
     // realistically lift a hopeless static eval past alpha — skip it. Never the
     // first move (a best move and bound must always exist) and never near mates.
     let futility_eval = if prunes && !in_check && depth <= 2 && alpha.abs() < VALUE_MATE_IN_MAX_PLY

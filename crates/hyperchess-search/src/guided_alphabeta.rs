@@ -2,7 +2,7 @@
 //! canonical search.
 //!
 //! These names all use the canonical [`TimedSearcher`]. `GuidedAlphaBeta` and
-//! `GuidedIterative` are compatibility aliases. `ShredderStyleSearcher` enables a
+//! `GuidedIterative` are compatibility aliases. `StrategicSearcher` enables a
 //! stronger tactical profile: larger TT, root child static-eval ordering, and a more
 //! conservative LMR threshold.
 
@@ -69,30 +69,30 @@ impl Searcher for GuidedIterative {
     }
 }
 
-pub struct ShredderStyleSearcher {
+pub struct StrategicSearcher {
     inner: TimedSearcher,
 }
 
-impl ShredderStyleSearcher {
+impl StrategicSearcher {
     pub fn new() -> Self {
         Self {
-            inner: TimedSearcher::shredder_style(),
+            inner: TimedSearcher::strategic(),
         }
     }
 }
 
-impl Default for ShredderStyleSearcher {
+impl Default for StrategicSearcher {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Searcher for ShredderStyleSearcher {
+impl Searcher for StrategicSearcher {
     fn best_move(&mut self, board: &Board, max_depth: u32) -> HyperMove {
         self.inner.best_move(board, max_depth)
     }
 
     fn name(&self) -> &str {
-        "ShredderStyle"
+        "Strategic"
     }
 }

@@ -1,7 +1,7 @@
-//! `ProSearcher` — the "commercial-grade" search option.
+//! `AggressiveSearcher` — the "commercial-grade" search option.
 //!
-//! The canonical [`TimedSearcher`] running the [`SearchProfile::Pro`] profile:
-//! the full technique set of top commercial engines (Shredder/Stockfish class).
+//! The canonical [`TimedSearcher`] running the [`SearchProfile::Aggressive`] profile:
+//! the full technique set of top commercial engines (strategic/Stockfish class).
 //! On top of the always-on machinery (iterative deepening, transposition table,
 //! killers/history ordering, check extensions, LMR, null-move pruning, PVS,
 //! aspiration windows, SEE- and evasion-aware quiescence) it enables the
@@ -23,11 +23,11 @@ use hyperchess_rules::core::piece_move::HyperMove;
 use hyperchess_rules::tools::Searcher;
 
 /// Holds and reuses a Pro-profile canonical search across moves.
-pub struct ProSearcher {
+pub struct AggressiveSearcher {
     inner: TimedSearcher,
 }
 
-impl ProSearcher {
+impl AggressiveSearcher {
     pub fn new() -> Self {
         Self {
             inner: TimedSearcher::pro(),
@@ -35,18 +35,18 @@ impl ProSearcher {
     }
 }
 
-impl Default for ProSearcher {
+impl Default for AggressiveSearcher {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Searcher for ProSearcher {
+impl Searcher for AggressiveSearcher {
     fn best_move(&mut self, board: &Board, max_depth: u32) -> HyperMove {
         self.inner.best_move(board, max_depth)
     }
 
     fn name(&self) -> &str {
-        "Pro"
+        "Aggressive"
     }
 }

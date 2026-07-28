@@ -80,10 +80,10 @@ impl EngineConfig {
             "iterative" | "id" => format!("CPU-ID(d{})", self.depth),
             "guided" | "guided_ab" => format!("CPU-GAB(d{})", self.depth),
             "guided_id" => format!("CPU-GID(d{})", self.depth),
-            "shredder" | "shredder_style" | "shredder_like" => {
-                format!("CPU-ShredderStyle(d{})", self.depth)
+            "strategic" | "strategic" | "strategic_like" => {
+                format!("CPU-Strategic(d{})", self.depth)
             }
-            "pro" | "commercial" | "stockfish_like" => format!("CPU-Pro(d{})", self.depth),
+            "aggressive" | "commercial" | "stockfish_like" => format!("CPU-Aggressive(d{})", self.depth),
             "random" => "Random".to_string(),
             other => other.to_string(),
         }
@@ -136,10 +136,10 @@ fn ab_with_timeout(
     (stats.best_move, stats.completed_depth.max(1).min(depth))
 }
 
-fn shredder_with_timeout(board: &Board, depth: u32, timeout_ms: u64) -> (HyperMove, u32) {
+fn strategic_with_timeout(board: &Board, depth: u32, timeout_ms: u64) -> (HyperMove, u32) {
     use std::sync::atomic::AtomicBool;
     let stop = AtomicBool::new(false);
-    let mut searcher = TimedSearcher::shredder_style();
+    let mut searcher = TimedSearcher::strategic();
     let stats =
         searcher.search_with_stats(board, &SearchLimits::movetime(depth, timeout_ms), &stop);
     (stats.best_move, stats.completed_depth.max(1).min(depth))
@@ -285,26 +285,26 @@ fn pick_move(
         return (mv, "Random".to_string(), dr);
     }
 
-    if name_lower == "shredder" || name_lower == "shredder_style" || name_lower == "shredder_like" {
+    if name_lower == "strategic" || name_lower == "strategic" || name_lower == "strategic_like" {
         let (mv, depth_used) = if no_timeout {
             use hyperchess_rules::tools::Searcher;
             (
-                TimedSearcher::shredder_style().best_move(board, cfg.depth),
+                TimedSearcher::strategic().best_move(board, cfg.depth),
                 cfg.depth,
             )
         } else {
-            shredder_with_timeout(board, cfg.depth, timeout_ms)
+            strategic_with_timeout(board, cfg.depth, timeout_ms)
         };
         let dr: f64 = rng.gen();
         let label = if depth_used < cfg.depth {
-            format!("CPU-ShredderStyle(d{}→d{})", cfg.depth, depth_used)
+            format!("CPU-Strategic(d{}→d{})", cfg.depth, depth_used)
         } else {
-            format!("CPU-ShredderStyle(d{})", cfg.depth)
+            format!("CPU-Strategic(d{})", cfg.depth)
         };
         return (mv, label, dr);
     }
 
-    if name_lower == "pro" || name_lower == "commercial" || name_lower == "stockfish_like" {
+    if name_lower == "aggressive" || name_lower == "commercial" || name_lower == "stockfish_like" {
         let (mv, depth_used) = if no_timeout {
             use hyperchess_rules::tools::Searcher;
             (TimedSearcher::pro().best_move(board, cfg.depth), cfg.depth)
@@ -313,9 +313,9 @@ fn pick_move(
         };
         let dr: f64 = rng.gen();
         let label = if depth_used < cfg.depth {
-            format!("CPU-Pro(d{}→d{})", cfg.depth, depth_used)
+            format!("CPU-Aggressive(d{}→d{})", cfg.depth, depth_used)
         } else {
-            format!("CPU-Pro(d{})", cfg.depth)
+            format!("CPU-Aggressive(d{})", cfg.depth)
         };
         return (mv, label, dr);
     }

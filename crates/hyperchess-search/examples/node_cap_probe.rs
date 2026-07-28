@@ -1,6 +1,6 @@
 //! Probe: what search depth does a given node budget actually buy?
 //!
-//! The web WASM worker (engine-worker.js `best_move_shredder`) runs shredder/pro
+//! The web WASM worker (engine-worker.js `best_move_strategic`) runs strategic/pro
 //! searches with `nodeLimit ?? 1_500_000` and no wall clock. This example runs
 //! the same `TimedSearcher` on positions read from stdin (one HFEN per line) at a
 //! requested depth ceiling and node budget, and reports the *completed* depth —
@@ -43,7 +43,7 @@ fn main() {
             }
         };
         let stop = AtomicBool::new(false);
-        let mut searcher = TimedSearcher::with_profile(SearchProfile::ShredderStyle);
+        let mut searcher = TimedSearcher::with_profile(SearchProfile::Strategic);
         let t0 = std::time::Instant::now();
         let stats =
             searcher.search_with_stats(&board, &SearchLimits::nodes(max_depth, node_limit), &stop);
