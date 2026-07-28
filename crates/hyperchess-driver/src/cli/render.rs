@@ -1,4 +1,4 @@
-//! Board PNG rendering using the hyperchess_v2.ttf custom font.
+//! Board PNG rendering using the hyperchess.ttf custom font.
 
 use hyperchess_rules::board::Board;
 use hyperchess_rules::core::sq::SQ;
@@ -20,32 +20,32 @@ const TEXT_COLOR: Rgb<u8> = Rgb([0, 0, 0]);
 const BG_COLOR: Rgb<u8> = Rgb([48, 48, 48]);
 const LABEL_COLOR: Rgb<u8> = Rgb([200, 200, 200]);
 
-/// Font glyph mappings for pieces.
+/// Font glyph mappings for pieces (using identity characters).
 fn piece_glyph(piece: Piece) -> Option<char> {
     match piece {
-        Piece::WhiteKing => Some('k'),
-        Piece::BlackKing => Some('l'),
-        Piece::WhiteQueen => Some('q'),
-        Piece::BlackQueen => Some('w'),
-        Piece::WhiteRook => Some('r'),
-        Piece::BlackRook => Some('t'),
-        Piece::WhiteBishop => Some('b'),
-        Piece::BlackBishop => Some('n'),
-        Piece::WhiteKnight => Some('h'),
-        Piece::BlackKnight => Some('j'),
-        Piece::WhitePawn => Some('p'),
-        Piece::BlackPawn => Some('o'),
-        Piece::WhiteEagle => Some('v'),
-        Piece::BlackEagle => Some('u'),
-        Piece::WhiteHawk => Some('f'),
-        Piece::BlackHawk => Some('e'),
+        Piece::WhiteKing => Some('G'),
+        Piece::BlackKing => Some('g'),
+        Piece::WhiteQueen => Some('F'),
+        Piece::BlackQueen => Some('f'),
+        Piece::WhiteRook => Some('C'),
+        Piece::BlackRook => Some('c'),
+        Piece::WhiteBishop => Some('E'),
+        Piece::BlackBishop => Some('e'),
+        Piece::WhiteKnight => Some('D'),
+        Piece::BlackKnight => Some('d'),
+        Piece::WhitePawn => Some('M'),
+        Piece::BlackPawn => Some('m'),
+        Piece::WhiteEagle => Some('A'),
+        Piece::BlackEagle => Some('a'),
+        Piece::WhiteHawk => Some('B'),
+        Piece::BlackHawk => Some('b'),
         Piece::None => None,
     }
 }
 
 /// Save the board as a PNG image.
 pub fn save_png(board: &Board, path: &str) {
-    let font_data = include_bytes!("../../assets/hyperchess_v2.ttf");
+    let font_data = include_bytes!("../../assets/hyperchess.ttf");
     let font = match FontRef::try_from_slice(font_data) {
         Ok(f) => f,
         Err(e) => {
