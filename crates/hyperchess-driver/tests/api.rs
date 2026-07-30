@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // HyperChess Core — hyperchess-driver
 // File: crates/hyperchess-driver/tests/api.rs
-// Version: 1.0.0
+// Version: 1.1.0
 // Copyright (c) 2026 HyperChess Developer Team
 
 //! Integration tests for the API driver — exercises the real axum `Router`
@@ -115,6 +115,50 @@ async fn best_move_from_start_position_is_legal() {
     assert!(!mv.is_empty());
     // Symmetric start position: alpha-beta must score it dead even.
     assert_eq!(json["eval_cp"], 0);
+}
+
+#[tokio::test]
+async fn best_move_with_movetime_ms_returns_a_legal_move_for_alphabeta() {
+    let response = hyperchess_driver::api::router()
+        .oneshot(post(
+            "/move/best",
+            json!({ "fen": START_FEN, "algorithm": "alphabeta", "movetime_ms": 50 }),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json = body_json(response).await;
+    assert!(!json["best_move"].as_str().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn best_move_with_movetime_ms_returns_a_legal_move_for_mcts() {
+    let response = hyperchess_driver::api::router()
+        .oneshot(post(
+            "/move/best",
+            json!({ "fen": START_FEN, "algorithm": "mcts", "movetime_ms": 50, "simulations": 200 }),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json = body_json(response).await;
+    assert!(!json["best_move"].as_str().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn best_move_with_movetime_ms_falls_back_to_depth_only_for_an_unsupported_algorithm() {
+    // "guided_ab" isn't in movetime_bounded_move's list; the handler must
+    // fall back to the depth-only make_searcher path rather than error.
+    let response = hyperchess_driver::api::router()
+        .oneshot(post(
+            "/move/best",
+            json!({ "fen": START_FEN, "algorithm": "guided_ab", "depth": 2, "movetime_ms": 50 }),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let json = body_json(response).await;
+    assert!(!json["best_move"].as_str().unwrap().is_empty());
 }
 
 #[tokio::test]

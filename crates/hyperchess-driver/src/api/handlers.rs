@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // HyperChess Core — hyperchess-driver
 // File: crates/hyperchess-driver/src/api/handlers.rs
-// Version: 1.0.0
+// Version: 1.1.0
 // Copyright (c) 2026 HyperChess Developer Team
 
 //! Route handlers for the API driver.
+
+use std::sync::atomic::AtomicBool;
 
 use axum::extract::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
+use hyperchess_rules::tools::Searcher;
 use hyperchess_rules::Board;
+use hyperchess_search::{mcts::mcts_bounded, RandomBot, SearchLimits, TimedSearcher};
 
 use super::types::{
     BestMoveRequest, BestMoveResponse, ErrorResponse, FenValidateRequest, FenValidateResponse,
@@ -117,12 +121,47 @@ pub async fn best_move(
     let depth = req.depth.unwrap_or_else(super::default_depth);
     let simulations = req.simulations.unwrap_or(800);
 
-    let mut searcher = hyperchess_search::make_searcher(algorithm, simulations);
-    let mv = searcher.best_move(&board, depth);
+    let mv = req
+        .movetime_ms
+        .and_then(|movetime_ms| {
+            movetime_bounded_move(&board, algorithm, depth, simulations, movetime_ms)
+        })
+        .unwrap_or_else(|| {
+            let mut searcher = hyperchess_search::make_searcher(algorithm, simulations);
+            searcher.best_move(&board, depth)
+        });
     let eval_cp: i32 = hyperchess_rules::tools::eval::evaluate(&board);
 
     Ok(Json(BestMoveResponse {
         best_move: mv.stringify(),
         eval_cp,
     }))
+}
+
+/// Wall-clock-bounded search for the algorithms that support it (see
+/// [`super::types::BestMoveRequest::movetime_ms`]'s doc comment for the
+/// exact list). Returns `None` for any other algorithm name so the caller
+/// falls back to the depth-only path rather than silently ignoring the
+/// requested time budget.
+fn movetime_bounded_move(
+    board: &Board,
+    algorithm: &str,
+    depth: u32,
+    simulations: u32,
+    movetime_ms: u64,
+) -> Option<hyperchess_rules::core::piece_move::HyperMove> {
+    let stop = AtomicBool::new(false);
+    let limits = SearchLimits::movetime(depth, movetime_ms);
+    Some(match algorithm.to_lowercase().as_str() {
+        "random" => RandomBot::new().best_move(board, depth),
+        "mcts" => mcts_bounded(board, simulations, movetime_ms, &stop),
+        "alphabeta" | "ab" | "iterative" | "id" => {
+            TimedSearcher::new().search(board, &limits, &stop)
+        }
+        "strategic" | "strategic_like" => TimedSearcher::strategic().search(board, &limits, &stop),
+        "aggressive" | "pro" | "commercial" | "stockfish_like" => {
+            TimedSearcher::pro().search(board, &limits, &stop)
+        }
+        _ => return None,
+    })
 }
