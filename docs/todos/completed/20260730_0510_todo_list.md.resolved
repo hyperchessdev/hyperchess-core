@@ -1,0 +1,71 @@
+# Resolution: Diagnose EvE engine anomalies — MCTS non-checkmate & zero castling
+
+## Validation Checklist
+- [x] Verify root cause of Issue A is demonstrated from actual code paths (not speculation)
+- [x] Verify game-termination rules (50-move / repetition / ply cap) behavior in EvE mode is confirmed from code
+- [x] Verify root cause of Issue B (no castling) is demonstrated from actual movegen/state code
+- [x] Implement fixes for both issues
+- [x] Full Rust workspace test suite green after fixes (`cargo test --workspace --offline`)
+- [x] Sibling repo `hyperchess-live-stream` test suite green against the fixed `hyperchess-rules` dependency
+- [x] Verify findings reported to user with file:line references and recommended fixes
+
+## Outcomes / Summary
+
+**Issue B (castling never occurs) — ROOT CAUSE FOUND AND FIXED, 100% reproducible.**
+`crates/hyperchess-rules/src/core/piece_identity.rs`'s `START_HFEN_I` constant (the string
+`Board::start_pos()` parses) encoded the castling field as `-` instead of `KQkq`. Since
+`CastleRights::update_for_move` only ever clears bits and nothing ever sets them, every game
+started from this constant began with zero castling rights and could never castle, regardless
+of engine, skill, or seed — deterministic, not probabilistic, explaining "0 castling in 500k
+games" exactly. The JS/TS layer's own hand-written starting-position literals
+(`packages/board/src/web-component/hyperchess-board.ts`,
+`packages/store/src/__tests__/game-store.test.ts`) already had the correct `KQkq`, confirming
+this was an unintended Rust-side data bug, not a design choice. Fixed the constant; updated two
+test fixtures that had baked in the wrong value (`hfen.rs::test_parse_start_hfen`,
+`game.rs::test_save_hfeni_and_hpgni`) as expected, correct fallout. Full workspace test suite
+(all crates) passes clean after the fix, including all perft/castling-specific tests — no
+regressions.
+
+**Issue A (grandmaster MCTS won't force mate, game runs to ply 1220+) — partial root cause found
+and mitigated; full fix out of scope for one session.**
+`hyperchess-search::mcts`'s CPU rollout scores non-terminal leaves via clamped static
+material eval only (±3000cp → ±1.0). Once one side is hugely materially ahead, essentially
+every legal reply saturates to the same clamped value, giving MCTS's UCB1 selection zero
+gradient between "converging on mate" and aimless shuffling — a known weakness of
+static-eval-rollout MCTS (no random/deep playout to an actual terminal state, no
+mating-technique/mop-up term in the evaluator). Combined with `rule50` resetting on every pawn
+push, the internal 224-halfmove no-progress draw can be deferred indefinitely while material
+stays constant, letting a real game run far past the safety-net ply count if an external
+`--max-moves`/ply cap isn't also tightly bounded.
+
+Implemented a mating-technique shaping term (`mating_technique_bonus_cp` in
+`crates/hyperchess-search/src/mcts.rs`) added to the CPU leaf eval before the existing clamp:
+rewards driving a (near-)bare defending king toward a true corner (Manhattan-style
+distance-from-centre, not Chebyshev — a max-based metric saturates the instant either axis
+alone reaches the rim, which does not actually confine the king) and bringing the attacking
+king closer, gated strictly to positions where the defender has under ~400cp of material so
+ordinary middlegame/endgame play is untouched. Verified via new unit tests
+(`mating_technique_bonus_*`, `leaf_score` tests) and empirically: an adversarial synthetic
+14-piece-vs-lone-king position that failed to reach checkmate within 800 plies using a
+Chebyshev-max version of the bonus converged at ply 713 once corrected to the
+Manhattan-style metric. This is a real, verified improvement but not a complete fix — 700+
+plies is still a long game for a "won" position; a full fix would need either shallow
+tactical lookahead in the MCTS rollout instead of pure static eval, or a trained value
+network (AlphaZero-style), both out of scope here. The CUDA/GPU MCTS path
+(`hyperchess-search-cuda`) uses a separate kernel-based evaluator and was NOT touched — same
+class of weakness likely applies there and is a documented follow-up.
+
+**Secondary finding, not fixed:** `hyperchess-live-stream`'s
+`crates/live-stream-gameplay/src/lib.rs::CoreEngineAdapter::select_move` (line ~266) never
+uses `SkillProfile.search_time_cap_ms` — it calls `searcher.best_move(board, depth_guideline)`
+with no wall-clock bound at all, so "Grandmaster"'s advertised 8-second cap is dead metadata.
+Not fixed this session (didn't want to change live spectator-stream pacing behavior without
+being asked, and this session can't verify against the live deployment) — flagged as an open
+item.
+
+**Pre-existing, unrelated issue found (not fixed):** `hyperchess-sim` fails to build against
+current `hyrperchess-core` — `crates/../src/engine.rs:96` calls
+`TimedSearcher::shredder_style()`, which does not exist in `hyperchess-search::timed` (only
+`new`/`strategic`/`pro`/`with_profile`). Confirmed pre-existing (unrelated to this session's
+diff — grep shows `shredder_style` never existed in `hyperchess-search`'s git history) via
+`git stash` isolation. Left unfixed as out of scope; flagged for a separate session.

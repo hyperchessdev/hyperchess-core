@@ -755,7 +755,10 @@ mod tests {
 
         let lines: Vec<&str> = hfeni_content.lines().collect();
         assert_eq!(lines.len(), 2);
-        assert!(lines[0].contains("w - -"));
+        // First line is Board::start_pos()'s own HFEN, which carries all
+        // four castling rights ("KQkq"), not the second line's hand-written
+        // post-move fixture (still "w - -" — unrelated test data).
+        assert!(lines[0].contains("w KQkq -"));
 
         assert!(hpgni_content.contains("[Event \"HyperChess CUDA Engine Selfplay\"]"));
         assert!(hpgni_content.contains("[White \"test_white\"]"));

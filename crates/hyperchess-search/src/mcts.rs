@@ -23,6 +23,9 @@
 //! `mcts_with_eval` accepts an external leaf-evaluation closure so the CUDA
 //! CLI can inject `gpu_batch_eval` for batched GPU leaf scoring. Leaves pending
 //! evaluation carry a **virtual loss** so one batch explores distinct paths.
+//! [`mating_technique_bonus_cp`]'s KX-vs-K shaping only runs in the CPU
+//! rollout ([`mcts_bounded`]'s leaf scoring) — the external-evaluator path
+//! scores leaves however the caller's `eval_fn` does, unchanged.
 
 use hyperchess_rules::tools::prng::PRNG;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -31,10 +34,101 @@ use crate::timed::clock;
 
 use hyperchess_rules::board::Board;
 use hyperchess_rules::core::piece_move::HyperMove;
+use hyperchess_rules::core::score::PIECE_VALUE_EG;
+use hyperchess_rules::core::{PieceType, Player};
 use hyperchess_rules::tools::eval::evaluate;
 use hyperchess_rules::tools::Searcher;
 
 const C_UCT: f64 = 1.414; // √2
+
+// ── Mating-technique shaping ───────────────────────────────────────────────────
+
+/// Below this centipawn total (less than a minor piece), a side counts as a
+/// bare or near-bare king for [`mating_technique_bonus_cp`].
+const BARE_KING_MATERIAL_CP: i32 = 400;
+
+/// Sum of non-king material for `player`, in the same centipawn units as
+/// [`hyperchess_rules::tools::eval::evaluate`].
+fn side_material_cp(board: &Board, player: Player) -> i32 {
+    [
+        PieceType::P,
+        PieceType::N,
+        PieceType::B,
+        PieceType::R,
+        PieceType::Q,
+        PieceType::E,
+        PieceType::H,
+    ]
+    .iter()
+    .map(|&pt| PIECE_VALUE_EG[pt as usize] * board.piece_bb(player, pt).count_bits() as i32)
+    .sum()
+}
+
+/// Manhattan-style distance from `sq` to the board centre: 0 at the four
+/// centre squares, up to 22 at a corner of the 12×12 board.
+///
+/// Deliberately sums the two axis distances rather than taking their max: a
+/// king restricted along only one axis (say, pinned to the back rank but
+/// free to roam its full width) is not actually confined, and a `max`-based
+/// metric scores that identically to a true corner the instant either axis
+/// alone reaches the rim — leaving no further gradient pushing the king the
+/// rest of the way in. Summing keeps rewarding progress on the second axis.
+fn edge_distance(sq: hyperchess_rules::SQ) -> i32 {
+    let f = sq.file_idx() as i32;
+    let r = sq.rank_idx() as i32;
+    let cf = (f * 2 - 11).abs();
+    let cr = (r * 2 - 11).abs();
+    cf + cr
+}
+
+/// KX-vs-(near-)bare-king "mating technique" shaping, in centipawns, added to
+/// a non-terminal leaf's static eval before the existing ±3000cp clamp.
+///
+/// Plain material eval saturates at that clamp once a side is hugely ahead —
+/// every legal reply in an already-won position (say, ten-plus pieces vs a
+/// lone king) scores identically, so UCB1 selection has no gradient telling
+/// it "this move drives toward mate" apart from "this move shuffles
+/// aimlessly". Real engines handle exactly this case with a mop-up term:
+/// push the defending king toward the rim, bring the attacking king in to
+/// help confine it. Gated to positions where the defender has (near) no
+/// material left, so it never distorts ordinary middlegame/endgame play.
+///
+/// Returns a value from the **material-favoured side's** perspective — the
+/// caller mirrors it by side-to-move exactly as [`evaluate`] mirrors its own
+/// White-relative computation.
+fn mating_technique_bonus_cp(board: &Board) -> (Player, i32) {
+    let white_material = side_material_cp(board, Player::White);
+    let black_material = side_material_cp(board, Player::Black);
+    let (strong, weak, strong_material, weak_material) = if white_material >= black_material {
+        (Player::White, Player::Black, white_material, black_material)
+    } else {
+        (Player::Black, Player::White, black_material, white_material)
+    };
+
+    if weak_material >= BARE_KING_MATERIAL_CP || strong_material < BARE_KING_MATERIAL_CP {
+        return (strong, 0);
+    }
+
+    let weak_king = board.king_sq(weak);
+    let strong_king = board.king_sq(strong);
+    let push_to_edge = edge_distance(weak_king); // 0..11
+    let kings_close = 11 - (strong_king.distance(weak_king) as i32).min(11); // 11..0
+
+    (strong, push_to_edge * 15 + kings_close * 10)
+}
+
+/// Non-terminal leaf score for the CPU rollout: static eval plus the mating-
+/// technique term, clamped/normalised exactly as before.
+fn leaf_score(board: &Board) -> f64 {
+    let stm_eval = evaluate(board) as i32;
+    let (strong, bonus_cp) = mating_technique_bonus_cp(board);
+    let signed_bonus = if board.turn() == strong {
+        bonus_cp
+    } else {
+        -bonus_cp
+    };
+    ((stm_eval + signed_bonus) as f64).clamp(-3000.0, 3000.0) / 3000.0
+}
 
 // ── Arena node ────────────────────────────────────────────────────────────────
 
@@ -274,8 +368,9 @@ pub fn mcts_bounded(
         let score = if arena[leaf_idx].terminal {
             terminal_score(&leaf_board)
         } else {
-            // Heuristic rollout: static eval normalised to [-1, 1]
-            (evaluate(&leaf_board) as f64).clamp(-3000.0, 3000.0) / 3000.0
+            // Heuristic rollout: static eval + mating-technique shaping,
+            // normalised to [-1, 1]. See `leaf_score`.
+            leaf_score(&leaf_board)
         };
 
         backprop(&mut arena, leaf_idx, score);
@@ -471,6 +566,46 @@ impl Searcher for MctsSearcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn mating_technique_bonus_is_zero_outside_bare_king_endings() {
+        let board = Board::start_pos();
+        let (_, bonus) = mating_technique_bonus_cp(&board);
+        assert_eq!(bonus, 0, "both sides have full material at the start");
+    }
+
+    #[test]
+    fn mating_technique_bonus_rewards_cornering_the_bare_king() {
+        // White: Q+R+two minors vs Black: lone king. White king far away,
+        // black king in the centre — plenty of "still totally winning" quiet
+        // replies that plain clamped material eval would score identically.
+        let centre_king =
+            Board::from_hfen("12/12/12/12/12/5k6/12/12/2QRBN6/12/12/K11 w - - 0 1").unwrap();
+        let (strong, centre_bonus) = mating_technique_bonus_cp(&centre_king);
+        assert_eq!(strong, Player::White);
+
+        // Same material, black king pushed to a corner instead.
+        let cornered_king =
+            Board::from_hfen("k11/12/12/12/12/12/12/12/2QRBN6/12/12/K11 w - - 0 1").unwrap();
+        let (_, corner_bonus) = mating_technique_bonus_cp(&cornered_king);
+
+        assert!(
+            corner_bonus > centre_bonus,
+            "cornered king ({corner_bonus}) should score higher than centralised king ({centre_bonus})"
+        );
+    }
+
+    #[test]
+    fn mating_technique_bonus_reflects_side_to_move_in_leaf_score() {
+        let hfen = "k11/12/12/12/12/12/12/12/2QRBN6/12/12/K11";
+        let white_to_move = Board::from_hfen(&format!("{hfen} w - - 0 1")).unwrap();
+        let black_to_move = Board::from_hfen(&format!("{hfen} b - - 0 1")).unwrap();
+        // Same position, opposite side to move: the bonus favours White
+        // (the material-dominant side) either way, so the STM-relative leaf
+        // score must flip sign, not stay identical.
+        assert!(leaf_score(&white_to_move) > 0.0);
+        assert!(leaf_score(&black_to_move) < 0.0);
+    }
 
     #[test]
     fn zero_simulations_returns_a_legal_fallback_move() {

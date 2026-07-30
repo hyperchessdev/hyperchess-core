@@ -16,8 +16,16 @@ use super::piece::Piece;
 pub const NO_PIECE_ID: char = '\0';
 
 /// Starting position in HyperChess Identity-HFEN (HFEN-I).
+///
+/// Castling field is `KQkq` (all four rights available) — the JS/TS layer's
+/// own starting-position literals (`packages/board/src/web-component/hyperchess-board.ts`,
+/// the `packages/store`/`packages/core` test fixtures) already encode this
+/// correctly. This constant previously wrote `-` here, which meant
+/// `Board::start_pos()` began every game with zero castling rights; since
+/// `CastleRights::update_for_move` only ever clears bits, never sets them,
+/// no game started from this constant could ever castle.
 pub const START_HFEN_I: &str =
-    "12/abcdefghijkl/mnopqrstuvwx/12/12/12/12/12/12/MNOPQRSTUVWX/ABCDEFGHIJKL/12 w - - 0 1";
+    "12/abcdefghijkl/mnopqrstuvwx/12/12/12/12/12/12/MNOPQRSTUVWX/ABCDEFGHIJKL/12 w KQkq - 0 1";
 
 /// Returns true when `c` is a legal HFEN-I identity character.
 pub fn is_identity_char(c: char) -> bool {
