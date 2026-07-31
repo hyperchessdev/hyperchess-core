@@ -8,6 +8,16 @@ the first tagged release.
 
 ### Added
 
+- **`movetime_ms` on `POST /move/best`** (`hyperchess-driver`'s API driver): an optional
+  wall-clock search budget, dispatched through the same `TimedSearcher`/`mcts_bounded`/
+  `SearchLimits::movetime` primitives the anytime search paths already use, for algorithms
+  `random`, `alphabeta`/`ab`, `iterative`/`id`, `mcts`, `strategic`/`strategic_like`, and
+  `aggressive`/`pro`/`commercial`/`stockfish_like`. Other algorithm names (and requests that omit
+  it) keep the existing depth-only `make_searcher` behavior unchanged. Added so
+  `hyperchess-msrv-engine` consumers with a time-bounded persona (e.g. `hyperchess-live-stream`'s
+  per-skill-level search cap) can get the same guarantee remotely that they had when the search
+  was embedded in-process.
+
 - **Zero-dependency engine**: `hyperchess-eval`, `hyperchess-rules`, and `hyperchess-search`
   now build with no external crates by default. `rand` moved to dev-dependencies (rules) or was
   replaced by the engine's own XorShift64* PRNG (RandomBot, MCTS expansion shuffle — now

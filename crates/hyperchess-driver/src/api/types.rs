@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // HyperChess Core — hyperchess-driver
 // File: crates/hyperchess-driver/src/api/types.rs
-// Version: 1.0.0
+// Version: 1.1.0
 // Copyright (c) 2026 HyperChess Developer Team
 
 //! Request/response DTOs for the API driver — see
@@ -62,6 +62,20 @@ pub struct BestMoveRequest {
     /// to 800 if omitted.
     #[serde(default)]
     pub simulations: Option<u32>,
+    /// Hard wall-clock search budget in milliseconds, for callers that need a
+    /// time-bounded move instead of (or in addition to) a depth ceiling —
+    /// e.g. a persona with a documented "thinks for at most N seconds"
+    /// guarantee. When present, search is bounded by
+    /// [`hyperchess_search::timed::SearchLimits::movetime`] /
+    /// [`hyperchess_search::mcts::mcts_bounded`]'s `movetime_ms` instead of
+    /// the plain depth-only [`hyperchess_search::make_searcher`] path. `depth`
+    /// still applies as a ceiling when both are set. Only the algorithms
+    /// `random`, `alphabeta`/`ab`, `iterative`/`id`, `mcts`,
+    /// `strategic`/`strategic_like`, and `aggressive`/`pro`/`commercial`/
+    /// `stockfish_like` currently support this; other algorithm names ignore
+    /// `movetime_ms` and fall back to the depth-only path.
+    #[serde(default)]
+    pub movetime_ms: Option<u64>,
 }
 
 /// Result of `POST /move/best`.

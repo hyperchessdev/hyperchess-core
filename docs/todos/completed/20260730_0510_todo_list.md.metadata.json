@@ -1,0 +1,6 @@
+{
+  "task_id": "20260730_0510",
+  "prompt": "in the hypechess-core engine, i noticed something strange, when playing EvE mode. black is beginner alphabeta, white is grandmaster mcts, white has at least 10 pieces black has only king, game ply 1220, white can easily checkmates but it does not, game becomes infinite, why this happens and why the grandmaster hesitates to checkmate, and let the game continue. also EvE mode there are 500k games played and not castling occurs, there should be castling at some time, even though at random point of the game not always not every game, when available it should.",
+  "status": "completed",
+  "created_at": "2026-07-30T02:10:40Z"
+}

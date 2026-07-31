@@ -1,0 +1,57 @@
+# Resolution: "Club" skill Black ignoring free captures
+
+## Validation Checklist
+- [x] Root cause confirmed from actual code paths
+- [x] Determined blast radius (live-stream only vs shared core vs WASM/JS/API)
+- [x] Fix implemented and tested
+- [x] Systematic audit of every algorithm/skill level for capture + flee-threat logic (user follow-up)
+- [x] hyperchess-live-stream rebuilt and redeployed to OpenShift, rollout confirmed healthy
+
+## Outcomes / Summary
+
+**Root cause:** `hyperchess-live-stream/apps/server/src/main.rs::engine_scheduler()` — a static
+skill-level → algorithm dispatch table — mapped BOTH level 1 ("Beginner") and level 4 ("Club
+Player") to `EngineAlgorithm::Random`, which resolves to `hyperchess-search::RandomBot`: a
+searcher that picks uniformly across every legal move with zero regard for move type. It cannot
+capture or flee by construction, not by bug — this fully explains "Club never intends to
+capture, moves another piece to an empty place with no intent."
+
+**Blast radius: live-stream only.** The shared engine core (`hyperchess-rules`/
+`hyperchess-search`) was inspected and is not at fault — `RandomBot` behaves exactly as
+documented/intended, and every other searcher (`AlphaBetaSearcher`, `IterativeSearcher`,
+`GuidedAlphaBeta`/`GuidedIterative`, `StrategicSearcher`, `AggressiveSearcher` — all thin
+wrappers over the canonical `TimedSearcher`, which carries SEE-pruned/evasion-aware quiescence
+search; and `MctsSearcher`) correctly recognizes free captures and flees hanging pieces, verified
+empirically at their shallowest configured tiers (AlphaBeta/Iterative/Aggressive at depth 1;
+MCTS at 64 and 1000 simulations). WASM (`hyperchess-wasm`), the JS lobby
+(`hyperchess-dev-web`'s `app-lobby.js`), and the API driver (`hyperchess-driver`'s `api`
+subcommand, `algorithm: Option<String>`) all let the caller pick the algorithm explicitly rather
+than auto-mapping a skill number to a forced algorithm — none of them has an equivalent
+skill→algorithm table, so none of them can exhibit this bug. No changes needed there.
+
+**Fix:** `engine_scheduler()`'s match table no longer assigns `EngineAlgorithm::Random` to any
+of the ten named personas. Level 4 ("Club Player") now uses AlphaBeta at its own
+`depth_guideline` (2), joining levels 2/8 in the same family. Following an explicit user
+follow-up ("fix every algorithm and skill level... if search algorithm does not allow such a
+logic already we have to implement them"), level 1 ("Beginner") was audited too and changed the
+same way (AlphaBeta at `depth_guideline` 1) rather than carved out as an exception — every real
+searcher already had correct capture/flee logic even at the shallowest settings, so no new
+search-algorithm logic needed implementing; the fix was entirely which algorithm each persona is
+assigned to. `RandomBot`/`EngineAlgorithm::Random` were left intact in the shared library (used
+elsewhere, e.g. opening randomization) — only the live-stream persona roster no longer selects
+them.
+
+Added a regression test (`main.rs::tests::no_named_skill_level_is_the_random_algorithm`) that
+schedules 200 seeded matchups and asserts none of the ten levels ever resolves to the `random`
+algorithm, and confirmed all ten levels are actually reachable across that sample.
+
+**Deployed:** rebuilt `hyperchess-live-stream-server:dev` (from the workspace root, so it
+picked up both this fix and the local `hyrperchess-core` path dependency), pushed to
+`image-registry.openshift-image-registry.svc:5000/kyrpy-server/hyperchess-live-stream-server:dev`,
+triggered `oc rollout restart deployment/hyperchess-live-stream -n kyrpy-server` (done twice —
+once per fix, level-4 first then level-1), confirmed `2/2 Running` and `/health/live`,
+`/health/ready` healthy via pod port-forward each time. Only the server image was rebuilt; the
+broadcast worker (Node/Playwright/FFmpeg) is unrelated to this change and was left untouched.
+Final verification via `/api/v1/live/snapshot` showed a live game in progress (Master vs
+Grandmaster) with `KQ` castling rights present in the HFEN — confirming the previous session's
+castling fix is also live in production.

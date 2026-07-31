@@ -28,10 +28,11 @@ describe('@hyperchess/core - Board', () => {
     const board = createBoard();
     const hfen = getBoardHfen(board);
     expect(hfen).toContain('w');
-    // The canonical starting position (Rust engine's START_HFEN_I) has no
-    // castling rights by default — real games/tests that want castling
-    // available pass a HFEN with explicit rights, as the test above does.
-    expect(hfen.split(' ')[2]).toBe('-');
+    // The canonical starting position (Rust engine's START_HFEN_I) starts
+    // with all four castling rights available — CastleRights::update_for_move
+    // only ever clears bits, never sets them, so starting from '-' would mean
+    // no game could ever castle (that was the bug START_HFEN_I's `KQkq` fixed).
+    expect(hfen.split(' ')[2]).toBe('KQkq');
   });
 
   it('can create a game from HFEN', () => {

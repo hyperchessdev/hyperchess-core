@@ -294,7 +294,7 @@ mod tests {
         let hfen = START_HFEN;
         let data = parse_hfen(hfen).unwrap();
         assert_eq!(data.turn, Player::White);
-        assert_eq!(data.castling, "-");
+        assert_eq!(data.castling, "KQkq");
         assert_eq!(data.ep, "-");
         // Count pieces: 12+12 = 24 per side = 48 total
         assert_eq!(data.pieces.len(), 48);
