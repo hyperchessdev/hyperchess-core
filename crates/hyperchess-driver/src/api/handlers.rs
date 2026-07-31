@@ -103,6 +103,14 @@ pub async fn legal_moves(
 ///
 /// `eval_cp` is the static evaluation of the position as submitted, not of the
 /// position after `best_move`.
+///
+/// Runs on [`tokio::task::spawn_blocking`] rather than inline: the search has
+/// no `.await` points, so run directly on an async worker thread it would
+/// occupy that thread for the whole search (up to `movetime_ms`, or however
+/// long depth-N alphabeta/MCTS takes) with no chance for the runtime to poll
+/// anything else scheduled on it — including `/health`. Under concurrent
+/// requests that starved liveness/readiness probes long enough to get the
+/// container killed by kubelet, restarting the pod mid-game.
 #[utoipa::path(
     post,
     path = "/move/best",
@@ -117,20 +125,25 @@ pub async fn best_move(
 ) -> Result<Json<BestMoveResponse>, ApiError> {
     let board = parse_board(&req.fen)?;
 
-    let algorithm = req.algorithm.as_deref().unwrap_or("alphabeta");
+    let algorithm = req.algorithm.unwrap_or_else(|| "alphabeta".to_string());
     let depth = req.depth.unwrap_or_else(super::default_depth);
     let simulations = req.simulations.unwrap_or(800);
+    let movetime_ms = req.movetime_ms;
 
-    let mv = req
-        .movetime_ms
-        .and_then(|movetime_ms| {
-            movetime_bounded_move(&board, algorithm, depth, simulations, movetime_ms)
-        })
-        .unwrap_or_else(|| {
-            let mut searcher = hyperchess_search::make_searcher(algorithm, simulations);
-            searcher.best_move(&board, depth)
-        });
-    let eval_cp: i32 = hyperchess_rules::tools::eval::evaluate(&board);
+    let (mv, eval_cp) = tokio::task::spawn_blocking(move || {
+        let mv = movetime_ms
+            .and_then(|movetime_ms| {
+                movetime_bounded_move(&board, &algorithm, depth, simulations, movetime_ms)
+            })
+            .unwrap_or_else(|| {
+                let mut searcher = hyperchess_search::make_searcher(&algorithm, simulations);
+                searcher.best_move(&board, depth)
+            });
+        let eval_cp: i32 = hyperchess_rules::tools::eval::evaluate(&board);
+        (mv, eval_cp)
+    })
+    .await
+    .map_err(|e| ApiError(format!("search task failed: {e}")))?;
 
     Ok(Json(BestMoveResponse {
         best_move: mv.stringify(),
