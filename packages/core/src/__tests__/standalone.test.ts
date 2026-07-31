@@ -53,7 +53,7 @@ describe('@hyperchess/core/standalone (bundler-free browser entry point)', () =>
       const board = createBoard();
       expect(board.toMove).toBe('white');
       expect(board.pieces[18]).toEqual({ type: 'K', color: 'white' });
-      expect(getBoardHfen(board).split(' ')[2]).toBe('-'); // no castling rights by default
+      expect(getBoardHfen(board).split(' ')[2]).toBe('KQkq'); // all four rights available by default
     });
 
     it('generates legal moves matching the known starting-position count', () => {
