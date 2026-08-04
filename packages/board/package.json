@@ -45,8 +45,8 @@
     "@hyperchess/theme": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.2.0",
-    "vitest": "^0.34.0"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "files": ["dist", "README.md"],
   "keywords": ["hyperchess", "chess", "board", "component", "react", "vue", "web-component"],
